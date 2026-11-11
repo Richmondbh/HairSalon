@@ -1,13 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <!--
+    HairSalon.Api - the back end.
+    Web API controllers + business services + Entity Framework Core (SQLite) + ASP.NET Core Identity.
+    It never renders HTML; it only receives and returns JSON.
+  -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <!-- Keep ALL Microsoft packages on the same 9.0.x version to avoid version conflicts. -->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.21">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Swagger UI for testing the API in the browser. Stay on 7.x (8+ / 10+ change the API). -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HairSalon.Shared\HairSalon.Shared.csproj" />
   </ItemGroup>
 
 </Project>
