@@ -1,10 +1,16 @@
-﻿@using System.Net.Http
+@* Every @using here is available in all .razor files of the project. *@
+@using System.Net.Http
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
-@using Microsoft.AspNetCore.Components.Web.Virtualization
-@using Microsoft.AspNetCore.Components.WebAssembly.Http
 @using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using HairSalon.Client
 @using HairSalon.Client.Layout
+@using HairSalon.Client.Components
+@using HairSalon.Client.Auth
+@using HairSalon.Client.Services
+@using HairSalon.Shared.Dtos
+@using HairSalon.Shared.Rules
