@@ -1,0 +1,38 @@
+@*
+    A Bootstrap alert that only renders when Message has a value.
+
+    It supports TWO-WAY BINDING:  <AlertMessage @bind-Message="_error" />
+    @bind-Message is short for Message="_error" MessageChanged="v => _error = v".
+    When the user clicks X, the component calls MessageChanged(null) and the PARENT's
+    _error variable becomes null - a child component changing its parent's data.
+*@
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-@Type d-flex align-items-start gap-2" role="alert">
+        <i class="bi @Icon mt-1"></i>
+        <div class="flex-grow-1">@Message</div>
+        @if (MessageChanged.HasDelegate)
+        {
+            <button type="button" class="btn-close" aria-label="Close" @onclick="DismissAsync"></button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback<string?> MessageChanged { get; set; }
+
+    /// <summary>Bootstrap colour: danger, success, warning or info.</summary>
+    [Parameter] public string Type { get; set; } = "danger";
+
+    private string Icon => Type switch
+    {
+        "success" => "bi-check-circle",
+        "warning" => "bi-exclamation-triangle",
+        "info" => "bi-info-circle",
+        _ => "bi-x-circle"
+    };
+
+    private Task DismissAsync() => MessageChanged.InvokeAsync(null);
+}

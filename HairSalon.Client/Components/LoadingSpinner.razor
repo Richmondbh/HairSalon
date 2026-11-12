@@ -1,0 +1,10 @@
+@* Reusable "please wait" indicator. Usage: <LoadingSpinner Text="Loading services..." /> *@
+
+<div class="text-center py-5 text-muted">
+    <div class="spinner-border text-salon" role="status" aria-hidden="true"></div>
+    <div class="mt-2">@Text</div>
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "Loading...";
+}
