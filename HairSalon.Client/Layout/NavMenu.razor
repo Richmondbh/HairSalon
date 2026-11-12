@@ -1,39 +1,101 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">HairSalon.Client</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject AuthApiClient AuthApi
+@*
+    The top navigation bar. <AuthorizeView> shows different content depending on whether
+    the user is logged in, and which roles they have. Bootstrap's JavaScript is not used:
+    the mobile menu and the drop-downs are opened and closed with simple C# booleans.
+*@
+
+<nav class="navbar navbar-expand-lg navbar-dark salon-navbar sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="">
+            <i class="bi bi-scissors"></i> Nordic Hair Studio
+        </a>
+        <button class="navbar-toggler" type="button" aria-label="Toggle navigation" @onclick="() => _menuOpen = !_menuOpen">
             <span class="navbar-toggler-icon"></span>
         </button>
-    </div>
-</div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
+        <div class="collapse navbar-collapse @(_menuOpen ? "show" : "")">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Home</NavLink>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item dropdown">
+                            <button class="nav-link dropdown-toggle btn btn-link @(_userOpen ? "show" : "")" @onclick="ToggleUserMenu">
+                                <i class="bi bi-person-circle"></i> @context.User.Identity?.Name
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end @(_userOpen ? "show" : "")" data-bs-popper="static">
+                                <li><button class="dropdown-item" @onclick="LogoutAsync"><i class="bi bi-box-arrow-right"></i> Log out</button></li>
+                            </ul>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="login"><i class="bi bi-box-arrow-in-right"></i> Log in</NavLink>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn btn-gold btn-sm mt-2 mt-lg-0" href="register">Create account</a>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </ul>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    </div>
+</nav>
+
+@if (_adminOpen || _userOpen)
+{
+    @* An invisible layer behind the open drop-down: clicking anywhere closes it. *@
+    <div class="dropdown-backdrop-layer" @onclick="CloseMenus"></div>
+}
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool _menuOpen;
+    private bool _adminOpen;
+    private bool _userOpen;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    protected override void OnInitialized()
     {
-        collapseNavMenu = !collapseNavMenu;
+        // Close the menus whenever the user navigates to another page.
+        Navigation.LocationChanged += OnLocationChanged;
     }
+
+    private void ToggleAdminMenu()
+    {
+        _adminOpen = !_adminOpen;
+        _userOpen = false;
+    }
+
+    private void ToggleUserMenu()
+    {
+        _userOpen = !_userOpen;
+        _adminOpen = false;
+    }
+
+    private void CloseMenus()
+    {
+        _menuOpen = _adminOpen = _userOpen = false;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        CloseMenus();
+        StateHasChanged();
+    }
+
+    private async Task LogoutAsync()
+    {
+        CloseMenus();
+        await AuthApi.LogoutAsync();
+        Navigation.NavigateTo("");
+    }
+
+    // Always unsubscribe from events, otherwise the component can never be garbage collected.
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 }

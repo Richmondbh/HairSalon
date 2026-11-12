@@ -1,0 +1,102 @@
+@page "/login"
+@inject AuthApiClient AuthApi
+@inject NavigationManager Navigation
+
+<PageTitle>Log in | Nordic Hair Studio</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="card auth-card">
+            <div class="card-body p-4 p-md-5">
+                <h1 class="h3 text-center mb-1">Welcome back</h1>
+                <p class="text-center text-muted mb-4">Log in to book and manage your appointments.</p>
+
+                <AlertMessage @bind-Message="_error" />
+
+                @*
+                    EditForm + DataAnnotationsValidator = CLIENT-SIDE validation.
+                    The rules come from the [Required]/[EmailAddress] attributes on LoginDto in the
+                    Shared project. OnValidSubmit only runs when every rule passes.
+                *@
+                <EditForm Model="_model" OnValidSubmit="LoginAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label" for="email">Email</label>
+                        <InputText id="email" type="email" class="form-control" autocomplete="username" @bind-Value="_model.Email" />
+                        <ValidationMessage For="() => _model.Email" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="password">Password</label>
+                        <InputText id="password" type="password" class="form-control" autocomplete="current-password" @bind-Value="_model.Password" />
+                        <ValidationMessage For="() => _model.Password" />
+                    </div>
+
+                    <button type="submit" class="btn btn-salon w-100" disabled="@_busy">
+                        @if (_busy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Log in
+                    </button>
+                </EditForm>
+
+                <p class="text-center mt-4 mb-0">
+                    New here? <a href="register">Create an account</a>
+                </p>
+
+                <div class="demo-accounts mt-4">
+                    <div class="small text-muted mb-2">Demo accounts (click to fill in):</div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" @onclick='() => Fill("admin@salon.se", "Admin123!")'>
+                        <i class="bi bi-shield-lock"></i> Admin
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick='() => Fill("anna@salon.se", "Customer123!")'>
+                        <i class="bi bi-person"></i> Customer (Anna)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // [SupplyParameterFromQuery] fills this from the address: /login?returnUrl=book
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private readonly LoginDto _model = new();
+    private string? _error;
+    private bool _busy;
+
+    private async Task LoginAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await AuthApi.LoginAsync(_model);
+            Navigation.NavigateTo(SafeReturnUrl());
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>Only allow local addresses, so a link like ?returnUrl=https://evil.com is ignored.</summary>
+    private string SafeReturnUrl() =>
+        !string.IsNullOrWhiteSpace(ReturnUrl) && !ReturnUrl.Contains("://") && !ReturnUrl.StartsWith("//") && !ReturnUrl.StartsWith("login")
+            ? ReturnUrl
+            : "";
+
+    private void Fill(string email, string password)
+    {
+        _model.Email = email;
+        _model.Password = password;
+    }
+}
