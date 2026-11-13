@@ -1,0 +1,30 @@
+@inject HttpClient Http
+@*
+    A tiny component that calls GET api/health when it is first shown.
+    It proves that the client (port 7100) can reach the API (port 7200) - CORS included.
+*@
+
+<span class="api-status" title="@_title">
+    <span class="dot @(_online switch { true => "online", false => "offline", null => "" })"></span>
+    @(_online switch { true => "API online", false => "API offline", null => "Checking API..." })
+</span>
+
+@code {
+    private bool? _online;   // null = still checking
+    private string _title = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var health = await Http.GetFromJsonAsync<HealthDto>("api/health");
+            _online = health?.Status == "Online";
+            _title = $"Server time {health?.ServerTime:HH:mm:ss}";
+        }
+        catch (Exception)
+        {
+            _online = false;
+            _title = "Start HairSalon.Api (https://localhost:7200) - see README";
+        }
+    }
+}
