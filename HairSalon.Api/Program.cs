@@ -71,6 +71,7 @@ builder.Services.AddAuthorization();
 // Scoped = one instance per HTTP request, which matches the lifetime of the DbContext.
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ServiceCatalogService>();
 
 // ---------- 5. Controllers + JSON ----------
 // Enums are sent as text ("Confirmed") instead of numbers (1) - easier to read and test.
