@@ -1,16 +1,24 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@*
+    The layout wraps every page: navigation at the top, the page (@Body) in the middle,
+    and a footer at the bottom.
+*@
+
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    <NavMenu />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    <main class="flex-grow-1">
+        <div class="container py-4">
             @Body
-        </article>
+        </div>
     </main>
+
+    <footer class="site-footer">
+        <div class="container d-flex flex-column flex-md-row justify-content-between gap-2">
+            <div>
+                <i class="bi bi-scissors"></i> Nordic Hair Studio &middot; Storgatan 12, Östersund &middot; Mon-Sat 09:00-18:00
+            </div>
+            <ApiStatus />
+        </div>
+    </footer>
 </div>
