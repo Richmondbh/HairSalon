@@ -1,0 +1,24 @@
+@*
+    REUSABLE COMPONENT: one button per service category + "All".
+    Enum.GetValues<ServiceCategory>() lists the categories, so a new category added to
+    the enum appears here automatically.
+*@
+
+<div class="category-filter" role="group" aria-label="Filter by category">
+    <button type="button" class="btn btn-sm @(Selected == null ? "btn-salon" : "btn-outline-salon")" @onclick="() => SelectAsync(null)">
+        All
+    </button>
+    @foreach (var category in Enum.GetValues<ServiceCategory>())
+    {
+        <button type="button" class="btn btn-sm @(Selected == category ? "btn-salon" : "btn-outline-salon")" @onclick="() => SelectAsync(category)">
+            <i class="bi @Format.CategoryIcon(category)"></i> @category
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public ServiceCategory? Selected { get; set; }
+    [Parameter] public EventCallback<ServiceCategory?> SelectedChanged { get; set; }
+
+    private Task SelectAsync(ServiceCategory? category) => SelectedChanged.InvokeAsync(category);
+}

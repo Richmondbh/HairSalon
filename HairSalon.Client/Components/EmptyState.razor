@@ -1,0 +1,18 @@
+@* Shown when a list is empty - friendlier than a blank page. *@
+
+<div class="empty-state">
+    <i class="bi @Icon"></i>
+    <h2 class="h5 mt-3">@Title</h2>
+    @if (!string.IsNullOrEmpty(Text))
+    {
+        <p class="text-muted mb-3">@Text</p>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "bi-inbox";
+    [Parameter] public string Title { get; set; } = "Nothing here yet";
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

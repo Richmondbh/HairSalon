@@ -1,0 +1,40 @@
+@*
+    REUSABLE COMPONENT: shows one salon service as a card.
+    Used on the Services page, the home page and the profile page.
+
+    The parent can put its own buttons inside the card (ChildContent):
+        <ServiceCard Service="s">
+            <a href="book?serviceId=1" class="btn">Book</a>
+        </ServiceCard>
+    so the same card works for "Book", "Edit" or no button at all.
+*@
+
+<div class="card service-card h-100 @(Service.IsActive ? "" : "inactive")">
+    <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="category-pill">
+                <i class="bi @Format.CategoryIcon(Service.Category)"></i> @Service.Category
+            </span>
+            <span class="price">@Format.Price(Service.Price)</span>
+        </div>
+
+        <h3 class="h5 card-title">@Service.Name</h3>
+        <p class="text-muted small flex-grow-1">@Service.Description</p>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <span class="text-muted small"><i class="bi bi-clock"></i> @Format.Duration(Service.DurationMinutes)</span>
+            @if (!Service.IsActive)
+            {
+                <span class="badge text-bg-secondary">Inactive</span>
+            }
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code {
+    // [EditorRequired] gives a warning in the editor if the parent forgets this parameter.
+    [Parameter, EditorRequired] public ServiceDto Service { get; set; } = default!;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

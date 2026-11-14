@@ -1,0 +1,46 @@
+@implements IDisposable
+@*
+    REUSABLE COMPONENT: a search field that tells its parent what was typed.
+
+    CHILD -> PARENT communication with an EventCallback:
+        <SearchBox Value="_search" ValueChanged="OnSearchChanged" />
+    The box waits until the user stops typing for 300 ms ("debounce") before raising
+    ValueChanged, so we don't call the API for every single key press.
+*@
+
+<div class="input-group search-box">
+    <span class="input-group-text"><i class="bi bi-search"></i></span>
+    <input type="search" class="form-control" placeholder="@Placeholder" value="@Value" @oninput="OnInputAsync" aria-label="@Placeholder" />
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Search...";
+    [Parameter] public int DebounceMilliseconds { get; set; } = 300;
+
+    private CancellationTokenSource? _cts;
+
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString();
+
+        // Cancel the previous wait - the user is still typing.
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        try
+        {
+            await Task.Delay(DebounceMilliseconds, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        await ValueChanged.InvokeAsync(string.IsNullOrWhiteSpace(text) ? null : text.Trim());
+    }
+
+    public void Dispose() => _cts?.Cancel();
+}
