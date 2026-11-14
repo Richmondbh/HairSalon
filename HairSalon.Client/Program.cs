@@ -45,5 +45,6 @@ builder.Services.AddScoped(sp =>
 // ---------- Application services (typed API clients) ----------
 // Components never build URLs or parse JSON themselves - they call these classes.
 builder.Services.AddScoped<AuthApiClient>();
+builder.Services.AddScoped<ServiceApiClient>();
 
 await builder.Build().RunAsync();
