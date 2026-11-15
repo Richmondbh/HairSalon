@@ -13,4 +13,10 @@ public class ServiceApiClient(HttpClient http, JwtAuthenticationStateProvider au
             ("search", search), ("category", category), ("includeInactive", includeInactive ? true : null)));
 
     public Task<ServiceDto> GetByIdAsync(int id) => GetAsync<ServiceDto>($"api/services/{id}");
+
+    public Task<ServiceDto> CreateAsync(ServiceEditDto dto) => PostAsync<ServiceDto>("api/services", dto);
+
+    public Task<ServiceDto> UpdateAsync(int id, ServiceEditDto dto) => PutAsync<ServiceDto>($"api/services/{id}", dto);
+
+    public async Task<string> DeleteAsync(int id) => (await DeleteAsync<ApiMessage>($"api/services/{id}")).Message;
 }
