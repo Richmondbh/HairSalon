@@ -1,0 +1,82 @@
+@page "/stylists"
+@inject StylistApiClient StylistApi
+
+<PageTitle>Our stylists | Nordic Hair Studio</PageTitle>
+
+<div class="page-header">
+    <h1>Our stylists</h1>
+    <p class="lead text-muted">Experienced professionals with different specialities.</p>
+</div>
+
+<div class="row g-3 align-items-center mb-4">
+    <div class="col-md-6">
+        <SearchBox Value="@_search" ValueChanged="OnSearchChangedAsync" Placeholder="Search by name or specialization..." />
+    </div>
+    <div class="col-md-6 d-flex flex-wrap gap-3 justify-content-md-end">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="onlyAvailable" checked="@_onlyAvailable" @onchange="OnAvailableChangedAsync" />
+            <label class="form-check-label" for="onlyAvailable">Only available stylists</label>
+        </div>
+    </div>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_stylists == null)
+{
+    <LoadingSpinner Text="Loading stylists..." />
+}
+else if (VisibleStylists.Count == 0)
+{
+    <EmptyState Icon="bi-people" Title="No stylists found" Text="Try another search or turn off the filters." />
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var stylist in VisibleStylists)
+        {
+            <div class="col">
+                <StylistCard Stylist="stylist" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<StylistDto>? _stylists;
+    private string? _search;
+    private bool _onlyAvailable;
+    private string? _error;
+
+    private List<StylistDto> VisibleStylists => _stylists ?? new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _stylists = await StylistApi.GetAllAsync(_search, _onlyAvailable);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _stylists = new();
+        }
+    }
+
+    private async Task OnSearchChangedAsync(string? search)
+    {
+        _search = search;
+        await LoadAsync();
+    }
+
+    private async Task OnAvailableChangedAsync(ChangeEventArgs e)
+    {
+        _onlyAvailable = e.Value is true;
+        await LoadAsync();
+    }
+}

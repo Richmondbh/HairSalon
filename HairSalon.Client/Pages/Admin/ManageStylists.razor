@@ -1,0 +1,196 @@
+@page "/admin/stylists"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject StylistApiClient StylistApi
+@inject ToastService Toasts
+
+<PageTitle>Manage stylists | Admin</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>Manage stylists</h1>
+        <p class="text-muted mb-0">Add new team members, update details and availability.</p>
+    </div>
+    <button class="btn btn-salon" @onclick="OpenCreate"><i class="bi bi-person-plus"></i> New stylist</button>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_stylists == null)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Specialization</th>
+                        <th>Contact</th>
+                        <th class="text-end">Experience</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stylist in _stylists)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar avatar-sm">@stylist.Initials</div>
+                                    <span class="fw-semibold">@stylist.FullName</span>
+                                </div>
+                            </td>
+                            <td>@stylist.Specialization</td>
+                            <td class="small">
+                                <div>@stylist.Email</div>
+                                <div class="text-muted">@stylist.PhoneNumber</div>
+                            </td>
+                            <td class="text-end">@stylist.YearsOfExperience years</td>
+                            <td>
+                                @if (stylist.IsAvailable)
+                                {
+                                    <span class="badge text-bg-success">Available</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Unavailable</span>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-secondary" title="Edit" @onclick="() => OpenEdit(stylist)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Delete" @onclick="() => AskDelete(stylist)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<Modal @bind-IsOpen="_formOpen" Title="@(_editingId == null ? "New stylist" : "Edit stylist")" Size="lg">
+    <AlertMessage @bind-Message="_formError" />
+    <StylistForm Model="_form" OnSave="SaveAsync" OnCancel="() => _formOpen = false"
+                 Busy="_saving" SubmitText="@(_editingId == null ? "Add stylist" : "Save changes")" />
+</Modal>
+
+<ConfirmDialog @bind-IsOpen="_confirmOpen" Title="Delete stylist?" ConfirmText="Delete"
+               Message="@($"Delete {_toDelete?.FullName}? Stylists with appointments are marked unavailable instead.")"
+               OnConfirm="DeleteAsync" />
+
+@code {
+    private List<StylistDto>? _stylists;
+    private string? _error;
+
+    private bool _formOpen;
+    private StylistEditDto _form = new();
+    private int? _editingId;
+    private bool _saving;
+    private string? _formError;
+
+    private bool _confirmOpen;
+    private StylistDto? _toDelete;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _stylists = await StylistApi.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _stylists = new();
+        }
+    }
+
+    private void OpenCreate()
+    {
+        _editingId = null;
+        _form = new StylistEditDto();
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private void OpenEdit(StylistDto s)
+    {
+        _editingId = s.StylistId;
+        _form = new StylistEditDto
+        {
+            FirstName = s.FirstName,
+            LastName = s.LastName,
+            Email = s.Email,
+            PhoneNumber = s.PhoneNumber,
+            Specialization = s.Specialization,
+            YearsOfExperience = s.YearsOfExperience,
+            IsAvailable = s.IsAvailable,
+            Bio = s.Bio
+        };
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task SaveAsync(StylistEditDto model)
+    {
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_editingId is int id)
+            {
+                await StylistApi.UpdateAsync(id, model);
+                Toasts.ShowSuccess($"{model.FirstName} {model.LastName} was updated.");
+            }
+            else
+            {
+                await StylistApi.CreateAsync(model);
+                Toasts.ShowSuccess($"{model.FirstName} {model.LastName} was added to the team.");
+            }
+            _formOpen = false;
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(StylistDto stylist)
+    {
+        _toDelete = stylist;
+        _confirmOpen = true;
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_toDelete == null) return;
+        try
+        {
+            Toasts.ShowSuccess(await StylistApi.DeleteAsync(_toDelete.StylistId));
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _confirmOpen = false;
+            _toDelete = null;
+        }
+    }
+}
