@@ -1,0 +1,212 @@
+@page "/admin/services"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject ServiceApiClient ServiceApi
+@inject ToastService Toasts
+
+<PageTitle>Manage services | Admin</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>Manage services</h1>
+        <p class="text-muted mb-0">Create, edit, deactivate and delete the salon's services.</p>
+    </div>
+    <button class="btn btn-salon" @onclick="OpenCreate"><i class="bi bi-plus-lg"></i> New service</button>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <SearchBox Value="@_search" ValueChanged="OnSearchChangedAsync" Placeholder="Search services..." />
+    </div>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_services == null)
+{
+    <LoadingSpinner />
+}
+else if (_services.Count == 0)
+{
+    <EmptyState Icon="bi-list-ul" Title="No services" Text="Create the first service with the button above." />
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Duration</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var service in _services)
+                    {
+                        <tr class="@(service.IsActive ? "" : "text-muted")">
+                            <td>
+                                <div class="fw-semibold">@service.Name</div>
+                                <div class="small text-muted text-truncate" style="max-width: 320px">@service.Description</div>
+                            </td>
+                            <td><i class="bi @Format.CategoryIcon(service.Category)"></i> @service.Category</td>
+                            <td class="text-end">@Format.Price(service.Price)</td>
+                            <td class="text-end">@Format.Duration(service.DurationMinutes)</td>
+                            <td>
+                                @if (service.IsActive)
+                                {
+                                    <span class="badge text-bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-secondary" title="Edit" @onclick="() => OpenEdit(service)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Delete" @onclick="() => AskDelete(service)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* The SAME ServiceForm is used for "new" and "edit" - only the title and the data differ. *@
+<Modal @bind-IsOpen="_formOpen" Title="@(_editingId == null ? "New service" : "Edit service")" Size="lg">
+    <AlertMessage @bind-Message="_formError" />
+    <ServiceForm Model="_form" OnSave="SaveAsync" OnCancel="() => _formOpen = false"
+                 Busy="_saving" SubmitText="@(_editingId == null ? "Create service" : "Save changes")" />
+</Modal>
+
+<ConfirmDialog @bind-IsOpen="_confirmOpen" Title="Delete service?" ConfirmText="Delete"
+               Message="@($"Delete '{_toDelete?.Name}'? If the service has bookings it will be deactivated instead.")"
+               OnConfirm="DeleteAsync" />
+
+@code {
+    private List<ServiceDto>? _services;
+    private string? _search;
+    private string? _error;
+
+    // Form state
+    private bool _formOpen;
+    private ServiceEditDto _form = new();
+    private int? _editingId;
+    private bool _saving;
+    private string? _formError;
+
+    // Delete state
+    private bool _confirmOpen;
+    private ServiceDto? _toDelete;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _services = await ServiceApi.GetAllAsync(_search, includeInactive: true);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _services = new();
+        }
+    }
+
+    private async Task OnSearchChangedAsync(string? search)
+    {
+        _search = search;
+        await LoadAsync();
+    }
+
+    private void OpenCreate()
+    {
+        _editingId = null;
+        _form = new ServiceEditDto();
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private void OpenEdit(ServiceDto service)
+    {
+        _editingId = service.ServiceId;
+        // Copy the values into a NEW object, so cancelling does not change the list.
+        _form = new ServiceEditDto
+        {
+            Name = service.Name,
+            Description = service.Description,
+            Price = service.Price,
+            DurationMinutes = service.DurationMinutes,
+            Category = service.Category,
+            IsActive = service.IsActive
+        };
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task SaveAsync(ServiceEditDto model)
+    {
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_editingId is int id)
+            {
+                await ServiceApi.UpdateAsync(id, model);
+                Toasts.ShowSuccess($"'{model.Name}' was updated.");
+            }
+            else
+            {
+                await ServiceApi.CreateAsync(model);
+                Toasts.ShowSuccess($"'{model.Name}' was created.");
+            }
+
+            _formOpen = false;
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _formError = ex.Message;   // e.g. "A service called 'X' already exists."
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(ServiceDto service)
+    {
+        _toDelete = service;
+        _confirmOpen = true;
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_toDelete == null) return;
+        try
+        {
+            var message = await ServiceApi.DeleteAsync(_toDelete.ServiceId);
+            Toasts.ShowSuccess(message);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _confirmOpen = false;
+            _toDelete = null;
+        }
+    }
+}
