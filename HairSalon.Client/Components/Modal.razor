@@ -1,0 +1,47 @@
+@*
+    REUSABLE COMPONENT: a Bootstrap-styled dialog without any JavaScript.
+    It is shown when IsOpen is true. Two content areas (RenderFragments):
+        <Modal @bind-IsOpen="_open" Title="Edit service">
+            <ChildContent> ...the body... </ChildContent>
+            <Footer> ...buttons... </Footer>
+        </Modal>
+*@
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-label="@Title">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable @SizeClass">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5">@Title</h2>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseAsync"></button>
+                </div>
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                @if (Footer != null)
+                {
+                    <div class="modal-footer">
+                        @Footer
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+
+    /// <summary>"sm", "lg" or "xl" (empty = normal width).</summary>
+    [Parameter] public string Size { get; set; } = string.Empty;
+
+    private string SizeClass => string.IsNullOrEmpty(Size) ? string.Empty : $"modal-{Size}";
+
+    private Task CloseAsync() => IsOpenChanged.InvokeAsync(false);
+}

@@ -1,0 +1,69 @@
+@*
+    REUSABLE FORM for creating AND editing a service (the same form for both).
+    Validation rules come from ServiceEditDto in the Shared project, so the browser checks
+    exactly the same rules as the API.
+*@
+
+<EditForm Model="Model" OnValidSubmit="SubmitAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="small" />
+
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label class="form-label" for="svc-name">Name</label>
+            <InputText id="svc-name" class="form-control" @bind-Value="Model.Name" />
+            <ValidationMessage For="() => Model.Name" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="svc-category">Category</label>
+            <InputSelect id="svc-category" class="form-select" @bind-Value="Model.Category">
+                @foreach (var category in Enum.GetValues<ServiceCategory>())
+                {
+                    <option value="@category">@category</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="svc-price">Price (kr)</label>
+            <InputNumber id="svc-price" class="form-control" @bind-Value="Model.Price" />
+            <ValidationMessage For="() => Model.Price" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="svc-duration">Duration (minutes)</label>
+            <InputNumber id="svc-duration" class="form-control" step="5" @bind-Value="Model.DurationMinutes" />
+            <ValidationMessage For="() => Model.DurationMinutes" />
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="svc-description">Description</label>
+            <InputTextArea id="svc-description" class="form-control" rows="3" @bind-Value="Model.Description" />
+            <ValidationMessage For="() => Model.Description" />
+        </div>
+        <div class="col-12">
+            <div class="form-check form-switch">
+                <InputCheckbox id="svc-active" class="form-check-input" @bind-Value="Model.IsActive" />
+                <label class="form-check-label" for="svc-active">Active (visible to customers)</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary" @onclick="OnCancel">Cancel</button>
+        <button type="submit" class="btn btn-salon" disabled="@Busy">
+            @if (Busy)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            @SubmitText
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public ServiceEditDto Model { get; set; } = default!;
+    [Parameter] public EventCallback<ServiceEditDto> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public string SubmitText { get; set; } = "Save";
+    [Parameter] public bool Busy { get; set; }
+
+    private Task SubmitAsync() => OnSave.InvokeAsync(Model);
+}

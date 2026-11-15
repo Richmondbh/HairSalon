@@ -1,0 +1,34 @@
+@implements IDisposable
+@inject ToastService Toasts
+@*
+    Shows the messages from ToastService in the bottom-right corner.
+    It SUBSCRIBES to ToastService.OnChange - shared-state communication between components.
+*@
+
+<div class="toast-stack" aria-live="polite">
+    @foreach (var toast in Toasts.Toasts)
+    {
+        <div class="salon-toast toast-@toast.Level.ToString().ToLower()" role="status">
+            <i class="bi @Icon(toast.Level)"></i>
+            <span class="flex-grow-1">@toast.Text</span>
+            <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" @onclick="() => Toasts.Remove(toast.Id)"></button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() => Toasts.OnChange += Refresh;
+
+    // The event can be raised outside Blazor's normal flow (after Task.Delay), so we use
+    // InvokeAsync to re-render safely.
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private static string Icon(ToastLevel level) => level switch
+    {
+        ToastLevel.Success => "bi-check-circle-fill",
+        ToastLevel.Error => "bi-exclamation-octagon-fill",
+        _ => "bi-info-circle-fill"
+    };
+
+    public void Dispose() => Toasts.OnChange -= Refresh;
+}
