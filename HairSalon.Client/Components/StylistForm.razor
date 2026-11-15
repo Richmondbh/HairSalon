@@ -1,0 +1,71 @@
+@* Create/edit form for a stylist. Same pattern as ServiceForm. *@
+
+<EditForm Model="Model" OnValidSubmit="SubmitAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="small" />
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label" for="st-first">First name</label>
+            <InputText id="st-first" class="form-control" @bind-Value="Model.FirstName" />
+            <ValidationMessage For="() => Model.FirstName" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="st-last">Last name</label>
+            <InputText id="st-last" class="form-control" @bind-Value="Model.LastName" />
+            <ValidationMessage For="() => Model.LastName" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="st-email">Email</label>
+            <InputText id="st-email" type="email" class="form-control" @bind-Value="Model.Email" />
+            <ValidationMessage For="() => Model.Email" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="st-phone">Phone</label>
+            <InputText id="st-phone" type="tel" class="form-control" @bind-Value="Model.PhoneNumber" />
+            <ValidationMessage For="() => Model.PhoneNumber" />
+        </div>
+        <div class="col-md-8">
+            <label class="form-label" for="st-spec">Specialization</label>
+            <InputText id="st-spec" class="form-control" placeholder="e.g. Coloring & Highlights" @bind-Value="Model.Specialization" />
+            <ValidationMessage For="() => Model.Specialization" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="st-years">Years of experience</label>
+            <InputNumber id="st-years" class="form-control" @bind-Value="Model.YearsOfExperience" />
+            <ValidationMessage For="() => Model.YearsOfExperience" />
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="st-bio">Bio</label>
+            <InputTextArea id="st-bio" class="form-control" rows="3" @bind-Value="Model.Bio" />
+            <ValidationMessage For="() => Model.Bio" />
+        </div>
+        <div class="col-12">
+            <div class="form-check form-switch">
+                <InputCheckbox id="st-available" class="form-check-input" @bind-Value="Model.IsAvailable" />
+                <label class="form-check-label" for="st-available">Available for bookings</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary" @onclick="OnCancel">Cancel</button>
+        <button type="submit" class="btn btn-salon" disabled="@Busy">
+            @if (Busy)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            @SubmitText
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public StylistEditDto Model { get; set; } = default!;
+    [Parameter] public EventCallback<StylistEditDto> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public string SubmitText { get; set; } = "Save";
+    [Parameter] public bool Busy { get; set; }
+
+    private Task SubmitAsync() => OnSave.InvokeAsync(Model);
+}

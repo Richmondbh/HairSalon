@@ -1,0 +1,41 @@
+@*
+    REUSABLE COMPONENT: one stylist. Used on the Stylists page, the home page and the profile page.
+*@
+
+<div class="card stylist-card h-100 @(Stylist.IsAvailable ? "" : "unavailable")">
+    <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="avatar">@Stylist.Initials</div>
+            <div class="flex-grow-1">
+                <h3 class="h5 mb-0">@Stylist.FullName</h3>
+                <div class="text-muted small">@Stylist.Specialization</div>
+            </div>
+        </div>
+
+        @if (!Compact)
+        {
+            <p class="small flex-grow-1">@Stylist.Bio</p>
+        }
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mt-auto">
+            <span class="badge text-bg-light"><i class="bi bi-award"></i> @Stylist.YearsOfExperience years</span>
+            @if (Stylist.IsAvailable)
+            {
+                <span class="badge text-bg-success-subtle text-success-emphasis">Available</span>
+            }
+            else
+            {
+                <span class="badge text-bg-secondary">Not available</span>
+            }
+            <div class="ms-auto d-flex gap-2">
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public StylistDto Stylist { get; set; } = default!;
+
+    /// <summary>Compact = without the bio (home page).</summary>
+    [Parameter] public bool Compact { get; set; }
+}
