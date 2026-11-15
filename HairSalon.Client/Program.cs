@@ -2,6 +2,7 @@ using System.Globalization;
 using HairSalon.Client;
 using HairSalon.Client.Auth;
 using HairSalon.Client.Services;
+using HairSalon.Client.State;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -46,5 +47,9 @@ builder.Services.AddScoped(sp =>
 // Components never build URLs or parse JSON themselves - they call these classes.
 builder.Services.AddScoped<AuthApiClient>();
 builder.Services.AddScoped<ServiceApiClient>();
+
+// ---------- Shared state (component communication) ----------
+// One instance shared by all components: a component raises an event, others react.
+builder.Services.AddScoped<ToastService>();
 
 await builder.Build().RunAsync();
