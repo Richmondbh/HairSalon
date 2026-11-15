@@ -72,6 +72,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ServiceCatalogService>();
+builder.Services.AddScoped<StylistService>();
 
 // ---------- 5. Controllers + JSON ----------
 // Enums are sent as text ("Confirmed") instead of numbers (1) - easier to read and test.

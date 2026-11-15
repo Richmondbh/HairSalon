@@ -31,4 +31,29 @@ public static class MappingExtensions
         s.Category = dto.Category;
         s.IsActive = dto.IsActive;
     }
+
+    public static StylistDto ToDto(this Stylist s) => new()
+    {
+        StylistId = s.StylistId,
+        FirstName = s.FirstName,
+        LastName = s.LastName,
+        Email = s.Email,
+        PhoneNumber = s.PhoneNumber,
+        Specialization = s.Specialization,
+        YearsOfExperience = s.YearsOfExperience,
+        IsAvailable = s.IsAvailable,
+        Bio = s.Bio
+    };
+
+    public static void UpdateFrom(this Stylist s, StylistEditDto dto)
+    {
+        s.FirstName = dto.FirstName.Trim();
+        s.LastName = dto.LastName.Trim();
+        s.Email = dto.Email.Trim();
+        s.PhoneNumber = dto.PhoneNumber.Trim();
+        s.Specialization = dto.Specialization.Trim();
+        s.YearsOfExperience = dto.YearsOfExperience;
+        s.IsAvailable = dto.IsAvailable;
+        s.Bio = dto.Bio?.Trim() ?? string.Empty;
+    }
 }
