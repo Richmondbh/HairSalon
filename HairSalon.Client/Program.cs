@@ -47,6 +47,7 @@ builder.Services.AddScoped(sp =>
 // Components never build URLs or parse JSON themselves - they call these classes.
 builder.Services.AddScoped<AuthApiClient>();
 builder.Services.AddScoped<ServiceApiClient>();
+builder.Services.AddScoped<StylistApiClient>();
 
 // ---------- Shared state (component communication) ----------
 // One instance shared by all components: a component raises an event, others react.
