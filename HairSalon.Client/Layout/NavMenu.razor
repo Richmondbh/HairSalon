@@ -24,6 +24,17 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="services">Services</NavLink>
                 </li>
+                @* Only users with the Admin role see the admin menu. *@
+                <AuthorizeView Roles="@Roles.Admin">
+                    <li class="nav-item dropdown">
+                        <button class="nav-link dropdown-toggle btn btn-link @(_adminOpen ? "show" : "")" @onclick="ToggleAdminMenu">
+                            <i class="bi bi-speedometer2"></i> Admin
+                        </button>
+                        <ul class="dropdown-menu @(_adminOpen ? "show" : "")" data-bs-popper="static">
+                            <li><NavLink class="dropdown-item" href="admin/services"><i class="bi bi-list-ul"></i> Services</NavLink></li>
+                        </ul>
+                    </li>
+                </AuthorizeView>
             </ul>
 
             <ul class="navbar-nav ms-auto align-items-lg-center">
