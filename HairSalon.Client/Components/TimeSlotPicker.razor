@@ -1,0 +1,43 @@
+@*
+    REUSABLE COMPONENT: shows free times as buttons. Used by the booking page
+    The parent gives it the slots; the picker tells the parent which one was clicked.
+*@
+
+@if (Loading)
+{
+    <div class="text-muted small py-2"><span class="spinner-border spinner-border-sm me-2"></span>Finding free times...</div>
+}
+else if (Slots == null)
+{
+    <p class="text-muted small mb-0">@Hint</p>
+}
+else if (Slots.Count == 0)
+{
+    <div class="alert alert-light border small mb-0">
+        <i class="bi bi-calendar-x"></i> No free times on this day. Please choose another date or stylist.
+    </div>
+}
+else
+{
+    <div class="slot-grid" role="listbox" aria-label="Free times">
+        @foreach (var slot in Slots)
+        {
+            <button type="button" role="option" aria-selected="@(Selected == slot.StartTime)"
+                    class="slot @(Selected == slot.StartTime ? "selected" : "")"
+                    @onclick="() => SelectAsync(slot.StartTime)">
+                @Format.Time(slot.StartTime)
+            </button>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>null = nothing to show yet (service/stylist/date missing).</summary>
+    [Parameter] public List<TimeSlotDto>? Slots { get; set; }
+    [Parameter] public TimeOnly? Selected { get; set; }
+    [Parameter] public EventCallback<TimeOnly?> SelectedChanged { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string Hint { get; set; } = "Choose a service, a stylist and a date to see the free times.";
+
+    private Task SelectAsync(TimeOnly time) => SelectedChanged.InvokeAsync(time);
+}

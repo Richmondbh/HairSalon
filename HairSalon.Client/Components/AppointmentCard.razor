@@ -1,0 +1,52 @@
+@*
+    REUSABLE COMPONENT: one appointment, used on "My appointments".
+    The action buttons only appear when the parent passes a callback (OnCancel ...) AND the
+    appointment allows the action - so the same card can be interactive or read-only.
+*@
+
+<div class="card appointment-card @Format.StatusClass(Appointment.Status)">
+    <div class="card-body d-flex flex-column flex-md-row gap-3">
+        <div class="date-block">
+            <div class="month">@Appointment.AppointmentDate.ToString("MMM")</div>
+            <div class="day">@Appointment.AppointmentDate.Day</div>
+            <div class="weekday">@Appointment.AppointmentDate.ToString("ddd")</div>
+        </div>
+
+        <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <h3 class="h5 mb-0">@Appointment.ServiceName</h3>
+                <StatusBadge Status="Appointment.Status" />
+            </div>
+            <div class="text-muted small">
+                <i class="bi bi-clock"></i> @Format.Time(Appointment.StartTime)-@Format.Time(Appointment.EndTime)
+                &middot; <i class="bi bi-person"></i> @Appointment.StylistName
+                &middot; <i class="bi bi-cash"></i> @Format.Price(Appointment.Price)
+            </div>
+            @if (ShowCustomer)
+            {
+                <div class="small mt-1"><i class="bi bi-person-badge"></i> @Appointment.CustomerName (@Appointment.CustomerEmail)</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Appointment.Notes))
+            {
+                <div class="small mt-1 fst-italic">"@Appointment.Notes"</div>
+            }
+        </div>
+
+        <div class="d-flex flex-md-column gap-2 justify-content-md-center">
+            @if (OnCancel.HasDelegate && Appointment.CanBeChanged)
+            {
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => OnCancel.InvokeAsync(Appointment)">
+                    <i class="bi bi-x-lg"></i> Cancel
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AppointmentDto Appointment { get; set; } = default!;
+    [Parameter] public bool ShowCustomer { get; set; }
+
+    // EventCallback<T> = "call this method in the parent, with this value".
+    [Parameter] public EventCallback<AppointmentDto> OnCancel { get; set; }
+}

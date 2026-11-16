@@ -28,6 +28,10 @@
                 <span class="badge text-bg-secondary">Not available</span>
             }
             <div class="ms-auto d-flex gap-2">
+                @if (Stylist.IsAvailable)
+                {
+                    <a class="btn btn-sm btn-salon" href="@($"book?stylistId={Stylist.StylistId}")">Book</a>
+                }
             </div>
         </div>
     </div>

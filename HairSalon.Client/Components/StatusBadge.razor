@@ -1,0 +1,9 @@
+@* A coloured badge for an appointment status (colours are defined in app.css). *@
+
+<span class="badge status-badge @Format.StatusClass(Status)">
+    <i class="bi @Format.StatusIcon(Status)"></i> @Status
+</span>
+
+@code {
+    [Parameter] public AppointmentStatus Status { get; set; }
+}
