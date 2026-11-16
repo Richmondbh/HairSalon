@@ -56,4 +56,27 @@ public static class MappingExtensions
         s.IsAvailable = dto.IsAvailable;
         s.Bio = dto.Bio?.Trim() ?? string.Empty;
     }
+
+    /// <summary>
+    /// Needs Service, Stylist and Customer to be loaded with .Include(...) first,
+    /// otherwise the navigation properties are null.
+    /// </summary>
+    public static AppointmentDto ToDto(this Appointment a) => new()
+    {
+        AppointmentId = a.AppointmentId,
+        AppointmentDate = a.AppointmentDate,
+        StartTime = a.StartTime,
+        EndTime = a.EndTime,
+        Status = a.Status,
+        Notes = a.Notes,
+        Price = a.Price,
+        CreatedAt = a.CreatedAt,
+        ServiceId = a.ServiceId,
+        ServiceName = a.Service?.Name ?? string.Empty,
+        StylistId = a.StylistId,
+        StylistName = a.Stylist?.FullName ?? string.Empty,
+        CustomerId = a.CustomerId,
+        CustomerName = a.Customer?.FullName ?? string.Empty,
+        CustomerEmail = a.Customer?.Email ?? string.Empty,
+    };
 }
