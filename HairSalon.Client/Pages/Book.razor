@@ -1,0 +1,262 @@
+@page "/book"
+@attribute [Authorize]
+@inject ServiceApiClient ServiceApi
+@inject StylistApiClient StylistApi
+@inject AppointmentApiClient AppointmentApi
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<PageTitle>Book an appointment | Nordic Hair Studio</PageTitle>
+
+<div class="page-header">
+    <h1>Book an appointment</h1>
+    <p class="lead text-muted">Choose a service, a stylist and a time that suits you.</p>
+</div>
+
+@if (_services == null || _stylists == null)
+{
+    <LoadingSpinner Text="Loading the booking form..." />
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <AlertMessage @bind-Message="_error" />
+
+                    <EditForm Model="_model" OnValidSubmit="BookAsync">
+                        <DataAnnotationsValidator />
+
+                        @* ---------- Step 1: service ---------- *@
+                        <div class="booking-step">
+                            <h2 class="h6"><span class="step-number">1</span> Choose a service</h2>
+                            @*
+                                Value + ValueExpression + ValueChanged instead of @bind-Value, because we
+                                want to run our own method (reload the free times) when the value changes.
+                            *@
+                            <InputSelect class="form-select" Value="_model.ServiceId" ValueExpression="() => _model.ServiceId"
+                                         ValueChanged="(int id) => OnServiceChangedAsync(id)">
+                                <option value="0">Choose a service...</option>
+                                @foreach (var group in _services.GroupBy(s => s.Category))
+                                {
+                                    <optgroup label="@group.Key">
+                                        @foreach (var service in group)
+                                        {
+                                            <option value="@service.ServiceId">@service.Name - @Format.Price(service.Price) (@Format.Duration(service.DurationMinutes))</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => _model.ServiceId" />
+                        </div>
+
+                        @* ---------- Step 2: stylist ---------- *@
+                        <div class="booking-step">
+                            <h2 class="h6"><span class="step-number">2</span> Choose a stylist</h2>
+                            <InputSelect class="form-select" Value="_model.StylistId" ValueExpression="() => _model.StylistId"
+                                         ValueChanged="(int id) => OnStylistChangedAsync(id)">
+                                <option value="0">Choose a stylist...</option>
+                                @foreach (var stylist in OrderedStylists)
+                                {
+                                    <option value="@stylist.StylistId">@StylistLabel(stylist)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => _model.StylistId" />
+                        </div>
+
+                        @* ---------- Step 3: date ---------- *@
+                        <div class="booking-step">
+                            <h2 class="h6"><span class="step-number">3</span> Choose a date</h2>
+                            <InputDate class="form-control" Value="_model.AppointmentDate" ValueExpression="() => _model.AppointmentDate"
+                                       ValueChanged="(DateOnly date) => OnDateChangedAsync(date)"
+                                       min="@_today.ToString("yyyy-MM-dd")" max="@_today.AddDays(SalonHours.MaxDaysAhead).ToString("yyyy-MM-dd")" />
+                            <ValidationMessage For="() => _model.AppointmentDate" />
+                            @if (!SalonHours.IsOpen(_model.AppointmentDate))
+                            {
+                                <div class="form-text text-danger">The salon is closed on Sundays.</div>
+                            }
+                        </div>
+
+                        @* ---------- Step 4: time ---------- *@
+                        <div class="booking-step">
+                            <h2 class="h6"><span class="step-number">4</span> Choose a time</h2>
+                            <TimeSlotPicker Slots="_slots" Selected="_model.StartTime" SelectedChanged="time => _model.StartTime = time" Loading="_loadingSlots" />
+                            <ValidationMessage For="() => _model.StartTime" />
+                        </div>
+
+                        <div class="booking-step">
+                            <h2 class="h6">Anything we should know? <span class="text-muted fw-normal">(optional)</span></h2>
+                            <InputTextArea class="form-control" rows="2" placeholder="e.g. allergies, inspiration, how short..." @bind-Value="_model.Notes" />
+                            <ValidationMessage For="() => _model.Notes" />
+                        </div>
+
+                        <button type="submit" class="btn btn-salon btn-lg w-100" disabled="@_busy">
+                            @if (_busy)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Book appointment
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        @* ---------- Summary (updates live while the form is filled in) ---------- *@
+        <div class="col-lg-4">
+            <div class="card booking-summary sticky-lg-top">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Your booking</h2>
+                    <dl class="mb-0">
+                        <dt>Service</dt>
+                        <dd>@(SelectedService?.Name ?? "-")</dd>
+                        <dt>Stylist</dt>
+                        <dd>@(SelectedStylist?.FullName ?? "-")</dd>
+                        <dt>Date &amp; time</dt>
+                        <dd>
+                            @Format.Date(_model.AppointmentDate)
+                            @if (_model.StartTime is TimeOnly start && SelectedService != null)
+                            {
+                                <br />
+                                <span>@Format.Time(start)-@Format.Time(start.AddMinutes(SelectedService.DurationMinutes))</span>
+                            }
+                        </dd>
+                        <dt>Price</dt>
+                        <dd class="mb-0">
+                            @if (SelectedService == null)
+                            {
+                                <span>-</span>
+                            }
+                            else
+                            {
+                                <strong>@Format.Price(SelectedService.Price)</strong>
+                            }
+                        </dd>
+                    </dl>
+                    <hr />
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> New bookings are <strong>pending</strong> until the salon confirms them.
+                        You can cancel or move your appointment under "My appointments".
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Pre-selection from links such as /book?serviceId=3 or /book?stylistId=2
+    [SupplyParameterFromQuery] public int? ServiceId { get; set; }
+    [SupplyParameterFromQuery] public int? StylistId { get; set; }
+
+    private readonly DateOnly _today = DateOnly.FromDateTime(DateTime.Today);
+    private readonly CreateAppointmentDto _model = new();
+    private List<ServiceDto>? _services;
+    private List<StylistDto>? _stylists;
+    private List<TimeSlotDto>? _slots;
+    private bool _loadingSlots;
+    private bool _busy;
+    private string? _error;
+
+    private ServiceDto? SelectedService => _services?.FirstOrDefault(s => s.ServiceId == _model.ServiceId);
+    private StylistDto? SelectedStylist => _stylists?.FirstOrDefault(s => s.StylistId == _model.StylistId);
+
+    private IEnumerable<StylistDto> OrderedStylists => _stylists ?? new();
+
+    private static string StylistLabel(StylistDto s) => $"{s.FullName} - {s.Specialization}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _services = await ServiceApi.GetAllAsync();
+            _stylists = await StylistApi.GetAllAsync(onlyAvailable: true);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _services ??= new();
+            _stylists ??= new();
+            return;
+        }
+
+        // Start on the next day the salon is open.
+        if (!SalonHours.IsOpen(_model.AppointmentDate))
+            _model.AppointmentDate = _model.AppointmentDate.AddDays(1);
+
+        if (ServiceId is int serviceId && _services.Any(s => s.ServiceId == serviceId))
+            _model.ServiceId = serviceId;
+        if (StylistId is int stylistId && _stylists.Any(s => s.StylistId == stylistId))
+            _model.StylistId = stylistId;
+
+        await LoadSlotsAsync();
+    }
+
+    private async Task OnServiceChangedAsync(int serviceId)
+    {
+        _model.ServiceId = serviceId;
+        await LoadSlotsAsync();
+    }
+
+    private async Task OnStylistChangedAsync(int stylistId)
+    {
+        _model.StylistId = stylistId;
+        await LoadSlotsAsync();
+    }
+
+    private async Task OnDateChangedAsync(DateOnly date)
+    {
+        _model.AppointmentDate = date;
+        await LoadSlotsAsync();
+    }
+
+    /// <summary>Asks the API for free times whenever service, stylist or date changes.</summary>
+    private async Task LoadSlotsAsync()
+    {
+        _model.StartTime = null;   // the old time may not be free on the new day
+
+        if (_model.ServiceId == 0 || _model.StylistId == 0)
+        {
+            _slots = null;
+            return;
+        }
+
+        _loadingSlots = true;
+        try
+        {
+            _slots = await AppointmentApi.GetAvailableSlotsAsync(_model.StylistId, _model.ServiceId, _model.AppointmentDate);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _slots = new();
+        }
+        finally
+        {
+            _loadingSlots = false;
+        }
+    }
+
+    private async Task BookAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var created = await AppointmentApi.CreateAsync(_model);
+            Toasts.ShowSuccess($"Booked! {created.ServiceName} on {Format.Date(created.AppointmentDate)} at {Format.Time(created.StartTime)}.");
+            Navigation.NavigateTo("my-appointments");
+        }
+        catch (ApiException ex)
+        {
+            // e.g. someone else took the time a second ago -> show the message and refresh the times.
+            _error = ex.Message;
+            await LoadSlotsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

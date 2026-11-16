@@ -27,6 +27,16 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="stylists">Stylists</NavLink>
                 </li>
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="book">Book</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="my-appointments">My appointments</NavLink>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
                 @* Only users with the Admin role see the admin menu. *@
                 <AuthorizeView Roles="@Roles.Admin">
                     <li class="nav-item dropdown">

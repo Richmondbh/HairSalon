@@ -40,6 +40,9 @@ else
         {
             <div class="col">
                 <ServiceCard Service="service">
+                    <a class="btn btn-sm btn-salon" href="@($"book?serviceId={service.ServiceId}")">
+                        <i class="bi bi-calendar-plus"></i> Book
+                    </a>
                 </ServiceCard>
             </div>
         }

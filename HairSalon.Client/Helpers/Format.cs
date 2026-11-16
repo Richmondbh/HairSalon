@@ -31,4 +31,23 @@ public static class Format
         ServiceCategory.Grooming => "bi-person-check",
         _ => "bi-tag"
     };
+
+    /// <summary>CSS class for the coloured status badge (see app.css).</summary>
+    public static string StatusClass(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Pending => "status-pending",
+        AppointmentStatus.Confirmed => "status-confirmed",
+        AppointmentStatus.Completed => "status-completed",
+        AppointmentStatus.Cancelled => "status-cancelled",
+        _ => string.Empty
+    };
+
+    public static string StatusIcon(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Pending => "bi-hourglass-split",
+        AppointmentStatus.Confirmed => "bi-check-circle",
+        AppointmentStatus.Completed => "bi-check2-all",
+        AppointmentStatus.Cancelled => "bi-x-circle",
+        _ => "bi-circle"
+    };
 }

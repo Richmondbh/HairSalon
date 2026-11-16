@@ -48,6 +48,7 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<AuthApiClient>();
 builder.Services.AddScoped<ServiceApiClient>();
 builder.Services.AddScoped<StylistApiClient>();
+builder.Services.AddScoped<AppointmentApiClient>();
 
 // ---------- Shared state (component communication) ----------
 // One instance shared by all components: a component raises an event, others react.

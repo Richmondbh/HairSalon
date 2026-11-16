@@ -1,0 +1,110 @@
+@page "/my-appointments"
+@attribute [Authorize]
+@inject AppointmentApiClient AppointmentApi
+@inject ToastService Toasts
+
+<PageTitle>My appointments | Nordic Hair Studio</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>My appointments</h1>
+        <p class="text-muted mb-0">Only you can see your bookings.</p>
+    </div>
+    <a href="book" class="btn btn-salon"><i class="bi bi-calendar-plus"></i> Book a new appointment</a>
+</div>
+
+@* Simple tabs: the selected filter is sent to the API (?filter=upcoming|history). *@
+<ul class="nav nav-pills salon-pills mb-4">
+    @foreach (var (key, label) in _tabs)
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_filter == key ? "active" : "")" @onclick="() => ChangeFilterAsync(key)">@label</button>
+        </li>
+    }
+</ul>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_appointments == null)
+{
+    <LoadingSpinner Text="Loading your appointments..." />
+}
+else if (_appointments.Count == 0)
+{
+    <EmptyState Icon="bi-calendar" Title="No appointments here" Text="When you book an appointment it will show up here.">
+        <a href="book" class="btn btn-salon">Book now</a>
+    </EmptyState>
+}
+else
+{
+    <div class="d-flex flex-column gap-3">
+        @foreach (var appointment in _appointments)
+        {
+            <AppointmentCard Appointment="appointment"
+                             OnCancel="AskCancel"
+                             />
+        }
+    </div>
+}
+
+<ConfirmDialog @bind-IsOpen="_confirmOpen" Title="Cancel appointment?" ConfirmText="Yes, cancel it"
+               Message="@($"Do you want to cancel {_selected?.ServiceName} on {(_selected == null ? "" : Format.Date(_selected.AppointmentDate))}?")"
+               OnConfirm="CancelAsync" />
+
+@code {
+    private readonly (string Key, string Label)[] _tabs = [("upcoming", "Upcoming"), ("history", "History"), ("all", "All")];
+    private string _filter = "upcoming";
+    private List<AppointmentDto>? _appointments;
+    private string? _error;
+
+    // The appointment the open dialog is about.
+    private AppointmentDto? _selected;
+    private bool _confirmOpen;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _appointments = await AppointmentApi.GetMineAsync(_filter == "all" ? null : _filter);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _appointments = new();
+        }
+    }
+
+    private async Task ChangeFilterAsync(string filter)
+    {
+        _filter = filter;
+        _appointments = null;   // show the spinner
+        await LoadAsync();
+    }
+
+    private void AskCancel(AppointmentDto appointment)
+    {
+        _selected = appointment;
+        _confirmOpen = true;
+    }
+
+    private async Task CancelAsync()
+    {
+        if (_selected == null) return;
+        try
+        {
+            await AppointmentApi.CancelAsync(_selected.AppointmentId);
+            Toasts.ShowSuccess("Your appointment was cancelled.");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _confirmOpen = false;
+        }
+    }
+}
