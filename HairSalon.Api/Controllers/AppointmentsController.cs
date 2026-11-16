@@ -19,6 +19,7 @@ namespace HairSalon.Api.Controllers;
 ///   GET  api/appointments                   Admin        (all, with filters)
 ///   PUT  api/appointments/5/status          Admin        (confirm / complete / cancel)
 /// </summary>
+///
 [ApiController]
 [Route("api/appointments")]
 [Authorize]
