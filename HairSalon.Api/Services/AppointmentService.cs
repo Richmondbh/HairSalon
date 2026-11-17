@@ -20,7 +20,21 @@ public class AppointmentService(
 {
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
-    // ========================================== Time slots ===============================
+    /// <summary>
+    /// APPOINTMENT STATUS MANAGEMENT: which status may follow which.
+    ///   Pending   -> Confirmed or Cancelled
+    ///   Confirmed -> Completed or Cancelled
+    ///   Completed and Cancelled are final.
+    /// </summary>
+    private static readonly Dictionary<AppointmentStatus, AppointmentStatus[]> AllowedTransitions = new()
+    {
+        [AppointmentStatus.Pending] = [AppointmentStatus.Confirmed, AppointmentStatus.Cancelled],
+        [AppointmentStatus.Confirmed] = [AppointmentStatus.Completed, AppointmentStatus.Cancelled],
+        [AppointmentStatus.Completed] = [],
+        [AppointmentStatus.Cancelled] = []
+    };
+
+    // =============================== Time slots ===============================
 
     /// <summary>
     /// Calculates the free start times for a stylist on a date for a given service.
@@ -58,7 +72,7 @@ public class AppointmentService(
             .ToList();
     }
 
-    // =============================== Customer actions ===================================================================================
+    // =============================== Customer actions ===============================
 
     public async Task<AppointmentDto> CreateAsync(string customerId, CreateAppointmentDto dto)
     {
@@ -143,6 +157,91 @@ public class AppointmentService(
             throw new BusinessRuleException("An appointment that has already started cannot be cancelled.");
 
         appointment.Status = AppointmentStatus.Cancelled;
+        await db.SaveChangesAsync();
+
+        return appointment.ToDto();
+    }
+
+    /// <summary>
+    /// Moves an appointment to another date/time with the same stylist.
+    /// If a CUSTOMER moves it, it must be confirmed again (status -> Pending).
+    /// If an ADMIN moves it, it is confirmed directly.
+    /// </summary>
+    public async Task<AppointmentDto> RescheduleAsync(int id, string userId, bool isAdmin, RescheduleDto dto)
+    {
+        var appointment = await LoadAsync(id);
+
+        if (!isAdmin && appointment.CustomerId != userId)
+            throw new ForbiddenException("You can only change your own appointments.");
+
+        if (appointment.Status is not (AppointmentStatus.Pending or AppointmentStatus.Confirmed))
+            throw new BusinessRuleException("Only pending or confirmed appointments can be moved.");
+
+        if (!appointment.Stylist.IsAvailable)
+            throw new BusinessRuleException($"{appointment.Stylist.FullName} is not taking bookings at the moment.");
+
+        var start = dto.NewStartTime ?? throw new BusinessRuleException("Please choose a time.");
+        var duration = (int)(appointment.EndTime - appointment.StartTime).TotalMinutes;
+
+        await ValidateTimeAsync(dto.NewDate, start, duration, appointment.StylistId, appointment.CustomerId, appointment.AppointmentId);
+
+        var oldDescription = Describe(appointment);
+        appointment.AppointmentDate = dto.NewDate;
+        appointment.StartTime = start;
+        appointment.EndTime = start.AddMinutes(duration);
+        appointment.Status = isAdmin ? AppointmentStatus.Confirmed : AppointmentStatus.Pending;
+        await db.SaveChangesAsync();
+
+        return appointment.ToDto();
+    }
+
+    // =============================== Admin actions ===============================
+
+    /// <summary>All appointments with optional filters (admin "Appointments" page).</summary>
+    public async Task<List<AppointmentDto>> GetAllAsync(
+        AppointmentStatus? status, int? stylistId, DateOnly? from, DateOnly? to, string? search)
+    {
+        var query = WithDetails().AsNoTracking();
+
+        if (status.HasValue) query = query.Where(a => a.Status == status.Value);
+        if (stylistId.HasValue) query = query.Where(a => a.StylistId == stylistId.Value);
+        if (from.HasValue) query = query.Where(a => a.AppointmentDate >= from.Value);
+        if (to.HasValue) query = query.Where(a => a.AppointmentDate <= to.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(a =>
+                a.Customer.FirstName.ToLower().Contains(term) ||
+                a.Customer.LastName.ToLower().Contains(term) ||
+                (a.Customer.Email ?? "").ToLower().Contains(term) ||
+                a.Service.Name.ToLower().Contains(term));
+        }
+
+        var appointments = await query
+            .OrderBy(a => a.AppointmentDate)
+            .ThenBy(a => a.StartTime)
+            .ToListAsync();
+
+        return appointments.Select(a => a.ToDto()).ToList();
+    }
+
+    /// <summary>Approve (Confirmed), finish (Completed) or cancel an appointment.</summary>
+    public async Task<AppointmentDto> UpdateStatusAsync(int id, UpdateStatusDto dto)
+    {
+        var appointment = await LoadAsync(id);
+
+        if (appointment.Status == dto.Status)
+            return appointment.ToDto();
+
+        if (!AllowedTransitions[appointment.Status].Contains(dto.Status))
+            throw new BusinessRuleException($"An appointment that is {appointment.Status} cannot be changed to {dto.Status}.");
+
+        if (dto.Status == AppointmentStatus.Completed &&
+            appointment.AppointmentDate.ToDateTime(appointment.StartTime) > DateTime.Now)
+            throw new BusinessRuleException("An appointment cannot be completed before it has started.");
+
+        appointment.Status = dto.Status;
         await db.SaveChangesAsync();
 
         return appointment.ToDto();

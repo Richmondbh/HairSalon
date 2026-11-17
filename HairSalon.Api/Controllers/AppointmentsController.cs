@@ -1,6 +1,8 @@
 using HairSalon.Api.Infrastructure;
 using HairSalon.Api.Services;
 using HairSalon.Shared.Dtos;
+using HairSalon.Shared.Enums;
+using HairSalon.Shared.Rules;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +21,6 @@ namespace HairSalon.Api.Controllers;
 ///   GET  api/appointments                   Admin        (all, with filters)
 ///   PUT  api/appointments/5/status          Admin        (confirm / complete / cancel)
 /// </summary>
-///
 [ApiController]
 [Route("api/appointments")]
 [Authorize]
@@ -52,4 +53,21 @@ public class AppointmentsController(AppointmentService appointmentService) : Con
     [HttpPut("{id:int}/cancel")]
     public async Task<ActionResult<AppointmentDto>> Cancel(int id) =>
         Ok(await appointmentService.CancelAsync(id, User.GetUserId(), User.IsAdmin()));
+
+    [HttpPut("{id:int}/reschedule")]
+    public async Task<ActionResult<AppointmentDto>> Reschedule(int id, RescheduleDto dto) =>
+        Ok(await appointmentService.RescheduleAsync(id, User.GetUserId(), User.IsAdmin(), dto));
+
+    /// <summary>GET api/appointments?status=Pending&amp;stylistId=1&amp;from=2026-11-01&amp;to=2026-11-30&amp;search=anna</summary>
+    [Authorize(Roles = Roles.Admin)]
+    [HttpGet]
+    public async Task<ActionResult<List<AppointmentDto>>> GetAll(
+        [FromQuery] AppointmentStatus? status, [FromQuery] int? stylistId,
+        [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, [FromQuery] string? search) =>
+        Ok(await appointmentService.GetAllAsync(status, stylistId, from, to, search));
+
+    [Authorize(Roles = Roles.Admin)]
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<AppointmentDto>> UpdateStatus(int id, UpdateStatusDto dto) =>
+        Ok(await appointmentService.UpdateStatusAsync(id, dto));
 }
