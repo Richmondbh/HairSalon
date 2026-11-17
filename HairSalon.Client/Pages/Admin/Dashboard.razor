@@ -1,0 +1,130 @@
+@page "/admin"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject DashboardApiClient DashboardApi
+
+<PageTitle>Dashboard | Admin</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>Dashboard</h1>
+        <p class="text-muted mb-0">@DateTime.Today.ToString("dddd d MMMM yyyy")</p>
+    </div>
+    <button class="btn btn-outline-salon" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_dashboard == null)
+{
+    <LoadingSpinner Text="Calculating statistics..." />
+}
+else
+{
+    @* ---------- Key numbers ---------- *@
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <div class="col">
+            <StatCard Icon="bi-calendar-week" Label="Appointments this week" Value="@_dashboard.AppointmentsThisWeek.ToString()"
+                      SubText="@($"{_dashboard.UpcomingAppointments} upcoming in total")" Href="admin/appointments" />
+        </div>
+        <div class="col">
+            <StatCard Icon="bi-hourglass-split" Label="Waiting for approval" Value="@_dashboard.PendingAppointments.ToString()"
+                      Color="gold" SubText="Pending bookings" Href="admin/appointments" />
+        </div>
+        <div class="col">
+            <StatCard Icon="bi-cash-stack" Label="Revenue (completed)" Value="@Format.Price(_dashboard.EstimatedRevenue)"
+                      Color="teal" SubText="@($"{Format.Price(_dashboard.RevenueThisMonth)} this month")" />
+        </div>
+        <div class="col">
+            <StatCard Icon="bi-people" Label="Active customers" Value="@_dashboard.ActiveCustomers.ToString()"
+                      Color="rose" SubText="@($"of {_dashboard.TotalCustomers} registered (last 90 days)")" />
+        </div>
+        <div class="col">
+            <StatCard Icon="bi-person-badge" Label="Available stylists" Value="@($"{_dashboard.AvailableStylists} / {_dashboard.TotalStylists}")" Href="admin/stylists" />
+        </div>
+        <div class="col">
+            <StatCard Icon="bi-calendar-check" Label="Appointments in total" Value="@_dashboard.TotalAppointments.ToString()" Color="gold" />
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Bookings the next 7 days</h2>
+                    <BarChart Points="_dashboard.BookingsNext7Days" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Most popular services</h2>
+                    <BarChart Color="gold" Points="PopularAsPoints" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">All appointments by status</h2>
+                    <BarChart Color="teal" Points="_dashboard.StatusBreakdown" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title d-flex justify-content-between">
+                        Today's appointments
+                        <a href="admin/appointments" class="small fw-normal">Manage <i class="bi bi-arrow-right"></i></a>
+                    </h2>
+                    @if (_dashboard.TodaysAppointments.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">No appointments today.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var a in _dashboard.TodaysAppointments)
+                            {
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="fw-semibold">@Format.Time(a.StartTime)</span>
+                                        @a.ServiceName &middot; <span class="text-muted">@a.CustomerName with @a.StylistName</span>
+                                    </div>
+                                    <StatusBadge Status="a.Status" />
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DashboardDto? _dashboard;
+    private string? _error;
+
+    // Turn the popular-services list into chart points for the reusable BarChart.
+    private List<ChartPointDto> PopularAsPoints =>
+        _dashboard?.PopularServices
+            .Select(p => new ChartPointDto { Label = p.Name, Value = p.BookingCount })
+            .ToList() ?? new();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _error = null;
+            _dashboard = await DashboardApi.GetDashboardAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

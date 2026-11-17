@@ -1,0 +1,32 @@
+@* A key number on the dashboard. If Href is set, the whole card is a link. *@
+
+@if (string.IsNullOrEmpty(Href))
+{
+    <div class="card stat-card h-100">@Content</div>
+}
+else
+{
+    <a class="card stat-card stat-card-link h-100" href="@Href">@Content</a>
+}
+
+@code {
+    [Parameter] public string Icon { get; set; } = "bi-bar-chart";
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? SubText { get; set; }
+    [Parameter] public string Color { get; set; } = "plum";
+    [Parameter] public string? Href { get; set; }
+
+    // A RenderFragment written in C#: reusable markup inside the component.
+    private RenderFragment Content => @<div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon stat-@Color"><i class="bi @Icon"></i></div>
+        <div>
+            <div class="stat-value">@Value</div>
+            <div class="stat-label">@Label</div>
+            @if (!string.IsNullOrEmpty(SubText))
+            {
+                <div class="small text-muted">@SubText</div>
+            }
+        </div>
+    </div>;
+}

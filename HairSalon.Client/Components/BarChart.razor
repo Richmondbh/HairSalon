@@ -1,0 +1,36 @@
+@*
+    REUSABLE COMPONENT: a simple horizontal bar chart made only with HTML and CSS
+    (no JavaScript chart library needed). Each bar's width is its value in percent
+    of the biggest value.
+*@
+
+<div class="bar-chart">
+    @if (Points.Count == 0)
+    {
+        <p class="text-muted small mb-0">No data yet.</p>
+    }
+    @foreach (var point in Points)
+    {
+        <div class="bar-row">
+            <div class="bar-label" title="@point.Label">@point.Label</div>
+            <div class="bar-track">
+                <div class="bar-fill bar-@Color" style="width: @(Percent(point.Value).ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+            </div>
+            <div class="bar-value">@(ValueFormatter?.Invoke(point.Value) ?? point.Value.ToString("N0"))</div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<ChartPointDto> Points { get; set; } = new();
+
+    /// <summary>plum, gold, teal or rose (see app.css).</summary>
+    [Parameter] public string Color { get; set; } = "plum";
+
+    /// <summary>Optional: how to show the number, e.g. v => Format.Price(v).</summary>
+    [Parameter] public Func<decimal, string>? ValueFormatter { get; set; }
+
+    private decimal Max => Points.Count == 0 ? 0 : Points.Max(p => p.Value);
+
+    private decimal Percent(decimal value) => Max == 0 ? 0 : Math.Round(value / Max * 100, 1);
+}

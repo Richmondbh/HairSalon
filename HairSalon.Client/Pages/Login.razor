@@ -76,6 +76,13 @@
         try
         {
             var result = await AuthApi.LoginAsync(_model);
+
+            // Administrators start on the dashboard unless they were on their way somewhere.
+            if (string.IsNullOrWhiteSpace(ReturnUrl) && result.Roles.Contains(Roles.Admin))
+            {
+                Navigation.NavigateTo("admin");
+                return;
+            }
             Navigation.NavigateTo(SafeReturnUrl());
         }
         catch (ApiException ex)
