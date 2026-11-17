@@ -1,0 +1,138 @@
+@using System.Globalization
+@inject AppointmentApiClient AppointmentApi
+@*
+    REUSABLE DIALOG for moving an appointment. Used by customers (My appointments) AND by
+    administrators (Admin > Appointments). It loads the free times itself and REUSES
+    TimeSlotPicker. When the move succeeds it tells the parent through OnRescheduled.
+*@
+
+<Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Move appointment">
+    <ChildContent>
+        @if (Appointment != null)
+        {
+            <p class="mb-3">
+                <strong>@Appointment.ServiceName</strong> with @Appointment.StylistName<br />
+                <span class="text-muted">Now: @Format.Date(Appointment.AppointmentDate) at @Format.Time(Appointment.StartTime)</span>
+            </p>
+
+            <AlertMessage @bind-Message="_error" />
+
+            <label class="form-label" for="new-date">New date</label>
+            <input id="new-date" type="date" class="form-control mb-3"
+                   value="@_date.ToString("yyyy-MM-dd")"
+                   min="@Today.ToString("yyyy-MM-dd")" max="@Today.AddDays(SalonHours.MaxDaysAhead).ToString("yyyy-MM-dd")"
+                   @onchange="OnDateChangedAsync" />
+
+            <label class="form-label d-block">New time</label>
+            <TimeSlotPicker Slots="_slots" Selected="_time" SelectedChanged="time => _time = time" Loading="_loading" />
+
+            @if (!IsAdmin)
+            {
+                <p class="small text-muted mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i> The salon needs to confirm the new time again.
+                </p>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => IsOpenChanged.InvokeAsync(false)">Close</button>
+        <button type="button" class="btn btn-salon" disabled="@(_time == null || _saving)" @onclick="SaveAsync">
+            @if (_saving)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Move appointment
+        </button>
+    </Footer>
+</Modal>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public AppointmentDto? Appointment { get; set; }
+    [Parameter] public bool IsAdmin { get; set; }
+    [Parameter] public EventCallback<AppointmentDto> OnRescheduled { get; set; }
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly _date;
+    private TimeOnly? _time;
+    private List<TimeSlotDto>? _slots;
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+    private int? _preparedFor;
+
+    // Runs every time the parent passes new parameters. We only reset the dialog when it
+    // is opened for a (new) appointment.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsOpen)
+        {
+            _preparedFor = null;
+            return;
+        }
+
+        if (Appointment != null && _preparedFor != Appointment.AppointmentId)
+        {
+            _preparedFor = Appointment.AppointmentId;
+            _date = Appointment.AppointmentDate < Today ? Today : Appointment.AppointmentDate;
+            _time = null;
+            _error = null;
+            await LoadSlotsAsync();
+        }
+    }
+
+    private async Task OnDateChangedAsync(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        {
+            _date = date;
+            _time = null;
+            await LoadSlotsAsync();
+        }
+    }
+
+    private async Task LoadSlotsAsync()
+    {
+        if (Appointment == null) return;
+        _loading = true;
+        try
+        {
+            // excludeAppointmentId: the appointment's own current time counts as free.
+            _slots = await AppointmentApi.GetAvailableSlotsAsync(
+                Appointment.StylistId, Appointment.ServiceId, _date, Appointment.AppointmentId);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _slots = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Appointment == null || _time == null) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var updated = await AppointmentApi.RescheduleAsync(Appointment.AppointmentId,
+                new RescheduleDto { NewDate = _date, NewStartTime = _time });
+            await IsOpenChanged.InvokeAsync(false);
+            await OnRescheduled.InvokeAsync(updated);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            await LoadSlotsAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -33,6 +33,12 @@
         </div>
 
         <div class="d-flex flex-md-column gap-2 justify-content-md-center">
+            @if (OnReschedule.HasDelegate && Appointment.CanBeChanged)
+            {
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OnReschedule.InvokeAsync(Appointment)">
+                    <i class="bi bi-calendar-week"></i> Move
+                </button>
+            }
             @if (OnCancel.HasDelegate && Appointment.CanBeChanged)
             {
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => OnCancel.InvokeAsync(Appointment)">
@@ -49,4 +55,5 @@
 
     // EventCallback<T> = "call this method in the parent, with this value".
     [Parameter] public EventCallback<AppointmentDto> OnCancel { get; set; }
+    [Parameter] public EventCallback<AppointmentDto> OnReschedule { get; set; }
 }
