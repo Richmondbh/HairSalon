@@ -69,3 +69,20 @@ public class TimeSlotDto
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
 }
+
+/// <summary>Moves an appointment to a new date and time (same service and stylist).</summary>
+public class RescheduleDto
+{
+    [NotInPast(ErrorMessage = "Please choose today or a later date.")]
+    public DateOnly NewDate { get; set; }
+
+    [Required(ErrorMessage = "Please choose a time.")]
+    public TimeOnly? NewStartTime { get; set; }
+}
+
+/// <summary>Used by administrators to approve, complete or cancel an appointment.</summary>
+public class UpdateStatusDto
+{
+    [Required]
+    public AppointmentStatus Status { get; set; }
+}
