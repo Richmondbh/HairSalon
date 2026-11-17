@@ -1,0 +1,295 @@
+@page "/admin/appointments"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject AppointmentApiClient AppointmentApi
+@inject StylistApiClient StylistApi
+@inject ToastService Toasts
+
+<PageTitle>Appointments | Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Appointments</h1>
+    <p class="text-muted mb-0">Approve, complete, move or cancel bookings.</p>
+</div>
+
+@* ---------- Filters ---------- *@
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="btn btn-sm btn-outline-salon" @onclick="ShowTodayAsync">Today</button>
+            <button class="btn btn-sm btn-outline-salon" @onclick="ShowThisWeekAsync">This week</button>
+            <button class="btn btn-sm btn-outline-salon" @onclick="ShowPendingAsync">Waiting for approval</button>
+            <button class="btn btn-sm btn-link" @onclick="ClearFiltersAsync">Clear filters</button>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4 col-lg-3">
+                <SearchBox Value="@_search" ValueChanged="OnSearchChangedAsync" Placeholder="Customer or service..." />
+            </div>
+            <div class="col-md-4 col-lg-2">
+                <select class="form-select" value="@(_status?.ToString() ?? "")" @onchange="OnStatusChangedAsync" aria-label="Status">
+                    <option value="">All statuses</option>
+                    @foreach (var status in Enum.GetValues<AppointmentStatus>())
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <select class="form-select" value="@(_stylistId?.ToString() ?? "")" @onchange="OnStylistChangedAsync" aria-label="Stylist">
+                    <option value="">All stylists</option>
+                    @foreach (var stylist in _stylists)
+                    {
+                        <option value="@stylist.StylistId">@stylist.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-lg-2">
+                <input type="date" class="form-control" aria-label="From" value="@_from?.ToString("yyyy-MM-dd")" @onchange="e => OnDateChangedAsync(e, isFrom: true)" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <input type="date" class="form-control" aria-label="To" value="@_to?.ToString("yyyy-MM-dd")" @onchange="e => OnDateChangedAsync(e, isFrom: false)" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_appointments == null)
+{
+    <LoadingSpinner />
+}
+else if (_appointments.Count == 0)
+{
+    <EmptyState Icon="bi-calendar-x" Title="No appointments match the filters" />
+}
+else
+{
+    <p class="small text-muted">@_appointments.Count appointment(s)</p>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date &amp; time</th>
+                        <th>Customer</th>
+                        <th>Service</th>
+                        <th>Stylist</th>
+                        <th class="text-end">Price</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in _appointments)
+                    {
+                        <tr>
+                            <td class="text-nowrap">
+                                <div class="fw-semibold">@Format.Date(a.AppointmentDate)</div>
+                                <div class="small text-muted">@Format.Time(a.StartTime)-@Format.Time(a.EndTime)</div>
+                            </td>
+                            <td>
+                                <div>@a.CustomerName</div>
+                                <div class="small text-muted">@a.CustomerEmail</div>
+                            </td>
+                            <td>
+                                @a.ServiceName
+                                @if (!string.IsNullOrWhiteSpace(a.Notes))
+                                {
+                                    <i class="bi bi-chat-left-text text-muted ms-1" title="@a.Notes"></i>
+                                }
+                            </td>
+                            <td>@a.StylistName</td>
+                            <td class="text-end">@Format.Price(a.Price)</td>
+                            <td><StatusBadge Status="a.Status" /></td>
+                            <td class="text-end text-nowrap">
+                                @if (a.Status == AppointmentStatus.Pending)
+                                {
+                                    <button class="btn btn-sm btn-success" title="Confirm" @onclick="() => AskStatus(a, AppointmentStatus.Confirmed)">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                }
+                                @if (a.Status == AppointmentStatus.Confirmed && a.StartDateTime <= DateTime.Now)
+                                {
+                                    <button class="btn btn-sm btn-primary" title="Mark as completed" @onclick="() => AskStatus(a, AppointmentStatus.Completed)">
+                                        <i class="bi bi-check2-all"></i>
+                                    </button>
+                                }
+                                @if (a.Status is AppointmentStatus.Pending or AppointmentStatus.Confirmed)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" title="Move" @onclick="() => OpenReschedule(a)">
+                                        <i class="bi bi-calendar-week"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Cancel" @onclick="() => AskStatus(a, AppointmentStatus.Cancelled)">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* ---------- Change status dialog ---------- *@
+<Modal @bind-IsOpen="_statusOpen" Title="@StatusDialogTitle" Size="">
+    <ChildContent>
+        @if (_selected != null)
+        {
+            <p>
+                <strong>@_selected.ServiceName</strong> for @_selected.CustomerName<br />
+                <span class="text-muted">@Format.Date(_selected.AppointmentDate) at @Format.Time(_selected.StartTime) with @_selected.StylistName</span>
+            </p>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-outline-secondary" @onclick="() => _statusOpen = false">Close</button>
+        <button class="btn @(_newStatus == AppointmentStatus.Cancelled ? "btn-danger" : "btn-salon")" disabled="@_saving" @onclick="SaveStatusAsync">
+            @StatusDialogTitle
+        </button>
+    </Footer>
+</Modal>
+
+<RescheduleDialog @bind-IsOpen="_rescheduleOpen" Appointment="_selected" IsAdmin="true" OnRescheduled="OnRescheduledAsync" />
+
+@code {
+    private List<AppointmentDto>? _appointments;
+    private List<StylistDto> _stylists = new();
+    private string? _error;
+
+    // Filters - sent to the API, which filters in SQL.
+    private string? _search;
+    private AppointmentStatus? _status;
+    private int? _stylistId;
+    private DateOnly? _from;
+    private DateOnly? _to;
+
+    private AppointmentDto? _selected;
+    private bool _statusOpen;
+    private bool _rescheduleOpen;
+    private AppointmentStatus _newStatus;
+    private bool _saving;
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+
+    private string StatusDialogTitle => _newStatus switch
+    {
+        AppointmentStatus.Confirmed => "Confirm booking",
+        AppointmentStatus.Completed => "Mark as completed",
+        AppointmentStatus.Cancelled => "Cancel appointment",
+        _ => "Change status"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Start with today and the coming days.
+        _from = Today;
+        try
+        {
+            _stylists = await StylistApi.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _appointments = await AppointmentApi.GetAllAsync(_status, _stylistId, _from, _to, _search);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _appointments = new();
+        }
+    }
+
+    private async Task OnSearchChangedAsync(string? search) { _search = search; await LoadAsync(); }
+
+    private async Task OnStatusChangedAsync(ChangeEventArgs e)
+    {
+        _status = Enum.TryParse<AppointmentStatus>(e.Value?.ToString(), out var status) ? status : null;
+        await LoadAsync();
+    }
+
+    private async Task OnStylistChangedAsync(ChangeEventArgs e)
+    {
+        _stylistId = int.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        await LoadAsync();
+    }
+
+    private async Task OnDateChangedAsync(ChangeEventArgs e, bool isFrom)
+    {
+        // <input type="date"> always gives "yyyy-MM-dd" (or "" when cleared).
+        DateOnly? date = DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", out var d) ? d : null;
+        if (isFrom) _from = date; else _to = date;
+        await LoadAsync();
+    }
+
+    private async Task ShowTodayAsync() { _from = Today; _to = Today; _status = null; await LoadAsync(); }
+
+    private async Task ShowThisWeekAsync()
+    {
+        var monday = Today.AddDays(-(((int)Today.DayOfWeek + 6) % 7));
+        _from = monday;
+        _to = monday.AddDays(6);
+        _status = null;
+        await LoadAsync();
+    }
+
+    private async Task ShowPendingAsync() { _from = null; _to = null; _status = AppointmentStatus.Pending; await LoadAsync(); }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = null; _status = null; _stylistId = null; _from = null; _to = null;
+        await LoadAsync();
+    }
+
+    private void AskStatus(AppointmentDto appointment, AppointmentStatus newStatus)
+    {
+        _selected = appointment;
+        _newStatus = newStatus;
+        _statusOpen = true;
+    }
+
+    private async Task SaveStatusAsync()
+    {
+        if (_selected == null) return;
+        _saving = true;
+        try
+        {
+            await AppointmentApi.UpdateStatusAsync(_selected.AppointmentId, new UpdateStatusDto
+            {
+                Status = _newStatus,
+            });
+            Toasts.ShowSuccess($"{_selected.ServiceName} for {_selected.CustomerName} is now {_newStatus}.");
+            _statusOpen = false;
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void OpenReschedule(AppointmentDto appointment)
+    {
+        _selected = appointment;
+        _rescheduleOpen = true;
+    }
+
+    private async Task OnRescheduledAsync(AppointmentDto updated)
+    {
+        Toasts.ShowSuccess($"Moved to {Format.Date(updated.AppointmentDate)} at {Format.Time(updated.StartTime)} and confirmed.");
+        await LoadAsync();
+    }
+}

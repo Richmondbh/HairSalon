@@ -1,5 +1,6 @@
 using HairSalon.Client.Auth;
 using HairSalon.Shared.Dtos;
+using HairSalon.Shared.Enums;
 
 namespace HairSalon.Client.Services;
 
@@ -20,4 +21,14 @@ public class AppointmentApiClient(HttpClient http, JwtAuthenticationStateProvide
 
     public Task<AppointmentDto> CancelAsync(int id) =>
         PutAsync<AppointmentDto>($"api/appointments/{id}/cancel", null);
+
+    public Task<AppointmentDto> RescheduleAsync(int id, RescheduleDto dto) =>
+        PutAsync<AppointmentDto>($"api/appointments/{id}/reschedule", dto);
+
+    public Task<List<AppointmentDto>> GetAllAsync(AppointmentStatus? status, int? stylistId, DateOnly? from, DateOnly? to, string? search) =>
+        GetAsync<List<AppointmentDto>>(WithQuery("api/appointments",
+            ("status", status), ("stylistId", stylistId), ("from", from), ("to", to), ("search", search)));
+
+    public Task<AppointmentDto> UpdateStatusAsync(int id, UpdateStatusDto dto) =>
+        PutAsync<AppointmentDto>($"api/appointments/{id}/status", dto);
 }

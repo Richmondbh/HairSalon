@@ -42,6 +42,7 @@ else
         {
             <AppointmentCard Appointment="appointment"
                              OnCancel="AskCancel"
+                             OnReschedule="OpenReschedule"
                              />
         }
     </div>
@@ -50,6 +51,8 @@ else
 <ConfirmDialog @bind-IsOpen="_confirmOpen" Title="Cancel appointment?" ConfirmText="Yes, cancel it"
                Message="@($"Do you want to cancel {_selected?.ServiceName} on {(_selected == null ? "" : Format.Date(_selected.AppointmentDate))}?")"
                OnConfirm="CancelAsync" />
+
+<RescheduleDialog @bind-IsOpen="_rescheduleOpen" Appointment="_selected" OnRescheduled="OnRescheduledAsync" />
 
 @code {
     private readonly (string Key, string Label)[] _tabs = [("upcoming", "Upcoming"), ("history", "History"), ("all", "All")];
@@ -60,6 +63,7 @@ else
     // The appointment the open dialog is about.
     private AppointmentDto? _selected;
     private bool _confirmOpen;
+    private bool _rescheduleOpen;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -106,5 +110,17 @@ else
         {
             _confirmOpen = false;
         }
+    }
+
+    private void OpenReschedule(AppointmentDto appointment)
+    {
+        _selected = appointment;
+        _rescheduleOpen = true;
+    }
+
+    private async Task OnRescheduledAsync(AppointmentDto updated)
+    {
+        Toasts.ShowSuccess($"Moved to {Format.Date(updated.AppointmentDate)} at {Format.Time(updated.StartTime)}. The salon will confirm the new time.");
+        await LoadAsync();
     }
 }
