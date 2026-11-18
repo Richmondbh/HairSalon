@@ -1,0 +1,130 @@
+@page "/admin/customers/{Id}"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject CustomerApiClient CustomerApi
+@inject ToastService Toasts
+
+<PageTitle>Customer | Admin</PageTitle>
+
+<a href="admin/customers" class="d-inline-block mb-3"><i class="bi bi-arrow-left"></i> All customers</a>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_customer == null)
+{
+    @if (_error == null)
+    {
+        <LoadingSpinner />
+    }
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="avatar">@Initials</div>
+                        <div>
+                            <h1 class="h4 mb-0">@_customer.FullName</h1>
+                            <div class="small text-muted">Customer since @_customer.RegistrationDate.ToString("MMMM yyyy")</div>
+                        </div>
+                    </div>
+                    <dl class="row small mb-0">
+                        <dt class="col-5">Email</dt><dd class="col-7">@_customer.Email</dd>
+                        <dt class="col-5">Phone</dt><dd class="col-7">@(_customer.PhoneNumber ?? "-")</dd>
+                        <dt class="col-5">Bookings</dt><dd class="col-7">@_customer.TotalAppointments (@_customer.CompletedAppointments completed)</dd>
+                        <dt class="col-5">Cancelled</dt><dd class="col-7">@_customer.CancelledAppointments</dd>
+                        <dt class="col-5">Total spent</dt><dd class="col-7">@Format.Price(_customer.TotalSpent)</dd>
+                        <dt class="col-5">Last visit</dt><dd class="col-7">@(_customer.LastVisit is DateOnly d ? Format.Date(d) : "-")</dd>
+                        <dt class="col-5">Favourite service</dt><dd class="col-7">@(_customer.FavoriteService ?? "-")</dd>
+                        <dt class="col-5">Favourite stylist</dt><dd class="col-7">@(_customer.FavoriteStylist ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6">Account</h2>
+                    @if (_customer.IsLocked)
+                    {
+                        <p class="small text-danger"><i class="bi bi-lock"></i> This account is locked. The customer cannot log in.</p>
+                        <button class="btn btn-outline-success w-100" disabled="@_busy" @onclick="() => SetLockedAsync(false)">
+                            <i class="bi bi-unlock"></i> Unlock account
+                        </button>
+                    }
+                    else
+                    {
+                        <p class="small text-muted">Locking stops the customer from logging in (e.g. after repeated no-shows).</p>
+                        <button class="btn btn-outline-danger w-100" disabled="@_busy" @onclick="() => SetLockedAsync(true)">
+                            <i class="bi bi-lock"></i> Lock account
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h2 class="h5 mb-3">Appointment history</h2>
+            @if (_customer.Appointments.Count == 0)
+            {
+                <EmptyState Icon="bi-calendar" Title="No appointments yet" />
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var appointment in _customer.Appointments)
+                    {
+                        @* The same AppointmentCard as on "My appointments", but without callbacks = read-only. *@
+                        <AppointmentCard Appointment="appointment" />
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    // Filled from the route: /admin/customers/{Id}
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private CustomerDetailsDto? _customer;
+    private string? _error;
+    private bool _busy;
+
+    private string Initials => _customer == null ? "" :
+        string.Concat(_customer.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(p => p[0]).Take(2));
+
+    // OnParametersSetAsync (not OnInitialized) so the page reloads if the Id in the URL changes.
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _error = null;
+            _customer = await CustomerApi.GetByIdAsync(Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SetLockedAsync(bool locked)
+    {
+        _busy = true;
+        try
+        {
+            Toasts.ShowSuccess(await CustomerApi.SetLockedAsync(Id, locked));
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

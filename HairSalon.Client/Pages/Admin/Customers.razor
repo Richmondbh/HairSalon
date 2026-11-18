@@ -1,0 +1,107 @@
+@page "/admin/customers"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject CustomerApiClient CustomerApi
+@inject NavigationManager Navigation
+
+<PageTitle>Customers | Admin</PageTitle>
+
+<div class="page-header">
+    <h1>Customers</h1>
+    <p class="text-muted mb-0">Everyone with a customer account, with their booking statistics.</p>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <SearchBox Value="@_search" ValueChanged="OnSearchChangedAsync" Placeholder="Name, email or phone..." />
+    </div>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_customers == null)
+{
+    <LoadingSpinner />
+}
+else if (_customers.Count == 0)
+{
+    <EmptyState Icon="bi-person-x" Title="No customers found" />
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Registered</th>
+                        <th class="text-end">Bookings</th>
+                        <th class="text-end">Spent</th>
+                        <th>Last visit</th>
+                        <th>Account</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _customers)
+                    {
+                        <tr class="clickable" @onclick="@(() => Navigation.NavigateTo($"admin/customers/{c.Id}"))">
+                            <td>
+                                <div class="fw-semibold">@c.FullName</div>
+                                <div class="small text-muted">@c.Email</div>
+                            </td>
+                            <td class="small">@(c.PhoneNumber ?? "-")</td>
+                            <td class="small">@c.RegistrationDate.ToString("d MMM yyyy")</td>
+                            <td class="text-end">
+                                @c.TotalAppointments
+                                @if (c.CancelledAppointments > 0)
+                                {
+                                    <div class="small text-muted">@c.CancelledAppointments cancelled</div>
+                                }
+                            </td>
+                            <td class="text-end">@Format.Price(c.TotalSpent)</td>
+                            <td class="small">@(c.LastVisit is DateOnly last ? Format.ShortDate(last) : "-")</td>
+                            <td>
+                                @if (c.IsLocked)
+                                {
+                                    <span class="badge text-bg-danger"><i class="bi bi-lock"></i> Locked</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-success">Active</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CustomerDto>? _customers;
+    private string? _search;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _customers = await CustomerApi.GetAllAsync(_search);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _customers = new();
+        }
+    }
+
+    private async Task OnSearchChangedAsync(string? search)
+    {
+        _search = search;
+        await LoadAsync();
+    }
+}
