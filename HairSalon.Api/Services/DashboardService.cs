@@ -127,4 +127,98 @@ public class DashboardService(SalonDbContext db, UserManager<ApplicationUser> us
 
         return dashboard;
     }
+
+    /// <summary>The yearly report: monthly statistics, revenue analysis, top customers and stylists.</summary>
+    public async Task<ReportDto> GetReportAsync(int year)
+    {
+        var allDates = await db.Appointments.Select(a => a.AppointmentDate).ToListAsync();
+        var availableYears = allDates.Select(d => d.Year)
+            .Append(DateTime.Today.Year)
+            .Distinct()
+            .OrderByDescending(y => y)
+            .ToList();
+
+        // DateOnly is stored as 'yyyy-MM-dd' text, so a range comparison works in SQL.
+        var first = new DateOnly(year, 1, 1);
+        var last = new DateOnly(year, 12, 31);
+        var rows = await StatRows(first, last).ToListAsync();
+
+        var completed = rows.Where(r => r.Status == AppointmentStatus.Completed).ToList();
+        var notCancelled = rows.Where(r => r.Status != AppointmentStatus.Cancelled).ToList();
+
+        // ToLookup groups the rows by month once; looking up a month with no rows gives an empty list.
+        var byMonth = rows.ToLookup(r => r.Date.Month);
+
+        return new ReportDto
+        {
+            Year = year,
+            AvailableYears = availableYears,
+
+            TotalRevenue = completed.Sum(r => r.Price),
+            AverageBookingValue = completed.Count == 0 ? 0 : Math.Round(completed.Average(r => r.Price), 0),
+            CancellationRate = rows.Count == 0 ? 0
+                : Math.Round(100.0 * rows.Count(r => r.Status == AppointmentStatus.Cancelled) / rows.Count, 1),
+
+            BusiestWeekday = notCancelled
+                .GroupBy(r => r.Date.DayOfWeek)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key.ToString())
+                .FirstOrDefault() ?? "-",
+
+            BusiestHour = notCancelled
+                .GroupBy(r => r.StartTime.Hour)
+                .OrderByDescending(g => g.Count())
+                .Select(g => $"{g.Key:00}:00-{g.Key + 1:00}:00")
+                .FirstOrDefault() ?? "-",
+
+            Months = Enumerable.Range(1, 12).Select(month => new MonthlyStatDto
+            {
+                Month = month,
+                MonthName = English.DateTimeFormat.GetAbbreviatedMonthName(month),
+                Bookings = byMonth[month].Count(r => r.Status != AppointmentStatus.Cancelled),
+                Completed = byMonth[month].Count(r => r.Status == AppointmentStatus.Completed),
+                Cancelled = byMonth[month].Count(r => r.Status == AppointmentStatus.Cancelled),
+                Revenue = byMonth[month].Where(r => r.Status == AppointmentStatus.Completed).Sum(r => r.Price)
+            }).ToList(),
+
+            RevenueByService = completed
+                .GroupBy(r => r.ServiceName)
+                .Select(g => new ChartPointDto { Label = g.Key, Value = g.Sum(r => r.Price) })
+                .OrderByDescending(p => p.Value)
+                .ToList(),
+
+            RevenueByCategory = completed
+                .GroupBy(r => r.Category)
+                .Select(g => new ChartPointDto { Label = g.Key.ToString(), Value = g.Sum(r => r.Price) })
+                .OrderByDescending(p => p.Value)
+                .ToList(),
+
+            // Customers with the most money spent (and bookings as a tie-breaker).
+            TopCustomers = notCancelled
+                .GroupBy(r => new { r.CustomerId, r.CustomerName, r.CustomerEmail })
+                .Select(g => new TopCustomerDto
+                {
+                    Name = g.Key.CustomerName,
+                    Email = g.Key.CustomerEmail,
+                    Bookings = g.Count(),
+                    TotalSpent = g.Where(r => r.Status == AppointmentStatus.Completed).Sum(r => r.Price)
+                })
+                .OrderByDescending(c => c.TotalSpent)
+                .ThenByDescending(c => c.Bookings)
+                .Take(5)
+                .ToList(),
+
+            StylistPerformance = rows
+                .GroupBy(r => new { r.StylistId, r.StylistName })
+                .Select(g => new StylistPerformanceDto
+                {
+                    Name = g.Key.StylistName,
+                    CompletedAppointments = g.Count(r => r.Status == AppointmentStatus.Completed),
+                    Revenue = g.Where(r => r.Status == AppointmentStatus.Completed).Sum(r => r.Price),
+                    CancellationRate = Math.Round(100.0 * g.Count(r => r.Status == AppointmentStatus.Cancelled) / g.Count(), 1),
+                })
+                .OrderByDescending(s => s.Revenue)
+                .ToList()
+        };
+    }
 }
