@@ -1,0 +1,184 @@
+@page "/admin/reports"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inject DashboardApiClient DashboardApi
+
+<PageTitle>Reports | Admin</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>Reports &amp; revenue analysis</h1>
+        <p class="text-muted mb-0">Yearly statistics calculated with LINQ in the API.</p>
+    </div>
+    @if (_report != null)
+    {
+        <select class="form-select w-auto" value="@_year" @onchange="OnYearChangedAsync" aria-label="Year">
+            @foreach (var year in _report.AvailableYears)
+            {
+                <option value="@year">@year</option>
+            }
+        </select>
+    }
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_report == null)
+{
+    <LoadingSpinner Text="Building the report..." />
+}
+else
+{
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <div class="col"><StatCard Icon="bi-cash-stack" Label="Revenue" Value="@Format.Price(_report.TotalRevenue)" Color="teal" /></div>
+        <div class="col"><StatCard Icon="bi-receipt" Label="Average booking value" Value="@Format.Price(_report.AverageBookingValue)" /></div>
+        <div class="col"><StatCard Icon="bi-x-circle" Label="Cancellation rate" Value="@($"{_report.CancellationRate:0.0} %")" Color="rose" /></div>
+        <div class="col"><StatCard Icon="bi-clock-history" Label="Busiest day / hour" Value="@_report.BusiestWeekday" SubText="@_report.BusiestHour" Color="gold" /></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Revenue per month (@_report.Year)</h2>
+                    <BarChart Color="teal" Points="RevenuePerMonth" ValueFormatter="Format.Price" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Revenue by category</h2>
+                    <BarChart Color="gold" Points="_report.RevenueByCategory" ValueFormatter="Format.Price" />
+                    <h2 class="h6 card-title mt-4">Revenue by service</h2>
+                    <BarChart Color="plum" Points="_report.RevenueByService" ValueFormatter="Format.Price" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h6 card-title">Monthly booking statistics</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th class="text-end">Bookings</th>
+                            <th class="text-end">Completed</th>
+                            <th class="text-end">Cancelled</th>
+                            <th class="text-end">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in _report.Months)
+                        {
+                            <tr class="@(m.Bookings == 0 && m.Cancelled == 0 ? "text-muted" : "")">
+                                <td>@m.MonthName</td>
+                                <td class="text-end">@m.Bookings</td>
+                                <td class="text-end">@m.Completed</td>
+                                <td class="text-end">@m.Cancelled</td>
+                                <td class="text-end">@Format.Price(m.Revenue)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-semibold">
+                            <td>Total</td>
+                            <td class="text-end">@_report.Months.Sum(m => m.Bookings)</td>
+                            <td class="text-end">@_report.Months.Sum(m => m.Completed)</td>
+                            <td class="text-end">@_report.Months.Sum(m => m.Cancelled)</td>
+                            <td class="text-end">@Format.Price(_report.TotalRevenue)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Top customers</h2>
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Customer</th><th class="text-end">Bookings</th><th class="text-end">Spent</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in _report.TopCustomers)
+                            {
+                                <tr>
+                                    <td>@c.Name<div class="small text-muted">@c.Email</div></td>
+                                    <td class="text-end">@c.Bookings</td>
+                                    <td class="text-end">@Format.Price(c.TotalSpent)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Stylist performance</h2>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Stylist</th>
+                                    <th class="text-end">Completed</th>
+                                    <th class="text-end">Revenue</th>
+                                    <th class="text-end">Cancelled</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in _report.StylistPerformance)
+                                {
+                                    <tr>
+                                        <td>@s.Name</td>
+                                        <td class="text-end">@s.CompletedAppointments</td>
+                                        <td class="text-end">@Format.Price(s.Revenue)</td>
+                                        <td class="text-end">@s.CancellationRate.ToString("0.0") %</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private ReportDto? _report;
+    private int _year = DateTime.Today.Year;
+    private string? _error;
+
+    private List<ChartPointDto> RevenuePerMonth =>
+        _report?.Months.Select(m => new ChartPointDto { Label = m.MonthName, Value = m.Revenue }).ToList() ?? new();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _error = null;
+            _report = await DashboardApi.GetReportAsync(_year);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task OnYearChangedAsync(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var year))
+        {
+            _year = year;
+            await LoadAsync();
+        }
+    }
+}
