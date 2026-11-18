@@ -19,4 +19,8 @@ public class DashboardController(DashboardService dashboardService) : Controller
     [HttpGet]
     public async Task<ActionResult<DashboardDto>> Get() =>
         Ok(await dashboardService.GetDashboardAsync());
+
+    [HttpGet("report")]
+    public async Task<ActionResult<ReportDto>> GetReport([FromQuery] int? year) =>
+        Ok(await dashboardService.GetReportAsync(year ?? DateTime.Today.Year));
 }
