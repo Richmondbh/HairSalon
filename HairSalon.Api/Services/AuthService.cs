@@ -50,6 +50,10 @@ public class AuthService(
         if (user == null || !await userManager.CheckPasswordAsync(user, dto.Password))
             throw new BusinessRuleException("Invalid email or password.");
 
+        // Administrators can lock customer accounts (Admin > Customers).
+        if (await userManager.IsLockedOutAsync(user))
+            throw new ForbiddenException("This account has been locked. Please contact the salon.");
+
         var roles = await userManager.GetRolesAsync(user);
         return tokenService.CreateToken(user, roles);
     }
