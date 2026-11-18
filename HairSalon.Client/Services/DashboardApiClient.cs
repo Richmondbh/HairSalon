@@ -8,4 +8,6 @@ public class DashboardApiClient(HttpClient http, JwtAuthenticationStateProvider 
     : ApiClientBase(http, authState)
 {
     public Task<DashboardDto> GetDashboardAsync() => GetAsync<DashboardDto>("api/dashboard");
+
+    public Task<ReportDto> GetReportAsync(int year) => GetAsync<ReportDto>($"api/dashboard/report?year={year}");
 }
