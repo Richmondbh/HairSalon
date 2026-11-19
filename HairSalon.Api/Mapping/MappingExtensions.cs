@@ -79,4 +79,15 @@ public static class MappingExtensions
         CustomerName = a.Customer?.FullName ?? string.Empty,
         CustomerEmail = a.Customer?.Email ?? string.Empty,
     };
+
+    public static NotificationDto ToDto(this Notification n) => new()
+    {
+        NotificationId = n.NotificationId,
+        Title = n.Title,
+        Message = n.Message,
+        Type = n.Type,
+        IsRead = n.IsRead,
+        CreatedAt = n.CreatedAt,
+        AppointmentId = n.AppointmentId
+    };
 }
