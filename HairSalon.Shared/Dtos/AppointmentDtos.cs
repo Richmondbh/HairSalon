@@ -85,4 +85,8 @@ public class UpdateStatusDto
 {
     [Required]
     public AppointmentStatus Status { get; set; }
+
+    /// <summary>Optional message that is included in the customer's notification.</summary>
+    [StringLength(300)]
+    public string? Message { get; set; }
 }
