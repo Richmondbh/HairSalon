@@ -78,6 +78,9 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<NotificationService>();
 
+// A background service that runs for as long as the API runs and sends reminders.
+builder.Services.AddHostedService<AppointmentReminderService>();
+
 // ---------- 5. Controllers + JSON ----------
 // Enums are sent as text ("Confirmed") instead of numbers (1) - easier to read and test.
 builder.Services.AddControllers()

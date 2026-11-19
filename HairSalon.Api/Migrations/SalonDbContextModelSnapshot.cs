@@ -120,6 +120,9 @@ namespace HairSalon.Api.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("ReminderSent")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("INTEGER");
 

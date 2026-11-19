@@ -27,6 +27,9 @@ public class Appointment
     /// </summary>
     public decimal Price { get; set; }
 
+    /// <summary>Set by the reminder background service so a reminder is only sent once.</summary>
+    public bool ReminderSent { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // ---- Foreign keys + navigation properties ----

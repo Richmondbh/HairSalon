@@ -207,6 +207,7 @@ public class AppointmentService(
         appointment.StartTime = start;
         appointment.EndTime = start.AddMinutes(duration);
         appointment.Status = isAdmin ? AppointmentStatus.Confirmed : AppointmentStatus.Pending;
+        appointment.ReminderSent = false;   // the new time needs a new reminder
         await db.SaveChangesAsync();
 
         if (isAdmin)
