@@ -1,0 +1,51 @@
+@*
+    REUSABLE COMPONENT with two modes:
+      READ-ONLY (default): shows an average such as 4.5 with full/half/empty stars.
+          <StarRating Value="stylist.AverageRating" Count="stylist.ReviewCount" />
+      INPUT: the user clicks a star and the parent receives the number through ValueChanged.
+          <StarRating ReadOnly="false" Value="_rating" ValueChanged="r => _rating = r" Size="lg" />
+*@
+
+<span class="star-rating @(Size == "lg" ? "star-rating-lg" : "")" title="@Title">
+    @for (var i = 1; i <= 5; i++)
+    {
+        var star = i;   // copy the loop variable so each lambda gets its own value
+        var icon = Value >= star ? "bi-star-fill" : Value >= star - 0.5 ? "bi-star-half" : "bi-star";
+        if (ReadOnly)
+        {
+            <i class="bi @icon"></i>
+        }
+        else
+        {
+            <button type="button" class="star-button" aria-label="@($"{star} star{(star == 1 ? "" : "s")}")" @onclick="() => SelectAsync(star)">
+                <i class="bi @icon"></i>
+            </button>
+        }
+    }
+    @if (Count != null)
+    {
+        @if (Count == 0)
+        {
+            <span class="small text-muted ms-1">No reviews yet</span>
+        }
+        else
+        {
+            <span class="small text-muted ms-1">@Value.ToString("0.0") (@Count)</span>
+        }
+    }
+</span>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+
+    /// <summary>Number of reviews. When set, "4.6 (12)" is shown next to the stars.</summary>
+    [Parameter] public int? Count { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; } = true;
+    [Parameter] public string Size { get; set; } = "sm";
+
+    private string Title => Count == 0 ? "No reviews yet" : $"{Value:0.0} out of 5";
+
+    private Task SelectAsync(int stars) => ValueChanged.InvokeAsync(stars);
+}

@@ -78,6 +78,7 @@ public static class MappingExtensions
         CustomerId = a.CustomerId,
         CustomerName = a.Customer?.FullName ?? string.Empty,
         CustomerEmail = a.Customer?.Email ?? string.Empty,
+        HasReview = a.Review != null,
     };
 
     public static NotificationDto ToDto(this Notification n) => new()
@@ -90,4 +91,24 @@ public static class MappingExtensions
         CreatedAt = n.CreatedAt,
         AppointmentId = n.AppointmentId
     };
+
+    /// <summary>Needs Appointment (+ its Customer, Stylist and Service) to be included.</summary>
+    public static ReviewDto ToDto(this Review r) => new()
+    {
+        ReviewId = r.ReviewId,
+        AppointmentId = r.AppointmentId,
+        Rating = r.Rating,
+        Comment = r.Comment,
+        CreatedAt = r.CreatedAt,
+        CustomerName = ShortName(r.Appointment?.Customer),
+        StylistId = r.Appointment?.StylistId ?? 0,
+        StylistName = r.Appointment?.Stylist?.FullName ?? string.Empty,
+        ServiceName = r.Appointment?.Service?.Name ?? string.Empty
+    };
+
+    /// <summary>"Anna Svensson" -> "Anna S." (privacy on public pages).</summary>
+    private static string ShortName(ApplicationUser? user) =>
+        user == null ? "Customer"
+        : string.IsNullOrEmpty(user.LastName) ? user.FirstName
+        : $"{user.FirstName} {user.LastName[0]}.";
 }

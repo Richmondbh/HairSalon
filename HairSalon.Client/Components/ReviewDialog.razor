@@ -1,0 +1,94 @@
+@inject ReviewApiClient ReviewApi
+@inject ToastService Toasts
+@* Dialog where a customer rates a completed appointment (1-5 stars + an optional comment). *@
+
+<Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Review your visit">
+    <ChildContent>
+        @if (Appointment != null)
+        {
+            <p>
+                How was your <strong>@Appointment.ServiceName</strong> with @Appointment.StylistName
+                on @Format.Date(Appointment.AppointmentDate)?
+            </p>
+
+            <AlertMessage @bind-Message="_error" />
+
+            <div class="text-center mb-3">
+                <StarRating ReadOnly="false" Value="_rating" ValueChanged="stars => _rating = stars" Size="lg" />
+                <div class="small text-muted">@RatingText</div>
+            </div>
+
+            <label class="form-label" for="review-comment">Comment <span class="text-muted">(optional)</span></label>
+            <textarea id="review-comment" class="form-control" rows="3" maxlength="500" @bind="_comment"
+                      placeholder="What did you like? Would you recommend the stylist?"></textarea>
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => IsOpenChanged.InvokeAsync(false)">Cancel</button>
+        <button type="button" class="btn btn-gold" disabled="@(_rating == 0 || _saving)" @onclick="SubmitAsync">
+            <i class="bi bi-send"></i> Send review
+        </button>
+    </Footer>
+</Modal>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public AppointmentDto? Appointment { get; set; }
+    [Parameter] public EventCallback OnReviewed { get; set; }
+
+    private int _rating;
+    private string? _comment;
+    private string? _error;
+    private bool _saving;
+    private int? _preparedFor;
+
+    private string RatingText => _rating switch
+    {
+        1 => "Poor",
+        2 => "Fair",
+        3 => "Good",
+        4 => "Very good",
+        5 => "Excellent!",
+        _ => "Click a star"
+    };
+
+    protected override void OnParametersSet()
+    {
+        // Reset the form each time the dialog is opened for a new appointment.
+        if (IsOpen && Appointment != null && _preparedFor != Appointment.AppointmentId)
+        {
+            _preparedFor = Appointment.AppointmentId;
+            _rating = 0;
+            _comment = null;
+            _error = null;
+        }
+        if (!IsOpen) _preparedFor = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (Appointment == null) return;
+        _saving = true;
+        try
+        {
+            await ReviewApi.CreateAsync(new CreateReviewDto
+            {
+                AppointmentId = Appointment.AppointmentId,
+                Rating = _rating,
+                Comment = _comment
+            });
+            Toasts.ShowSuccess("Thank you for your review!");
+            await IsOpenChanged.InvokeAsync(false);
+            await OnReviewed.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -28,6 +28,7 @@ public class StylistService(SalonDbContext db)
 
         var stylists = await query.OrderBy(s => s.FirstName).ThenBy(s => s.LastName).ToListAsync();
         var dtos = stylists.Select(s => s.ToDto()).ToList();
+        await AddRatingsAsync(dtos);
         return dtos;
     }
 
@@ -36,6 +37,7 @@ public class StylistService(SalonDbContext db)
         var stylist = await db.Stylists.FindAsync(id)
                       ?? throw new NotFoundException($"Stylist {id} was not found.");
         var dto = stylist.ToDto();
+        await AddRatingsAsync([dto]);
         return dto;
     }
 
@@ -78,6 +80,27 @@ public class StylistService(SalonDbContext db)
         db.Stylists.Remove(stylist);
         await db.SaveChangesAsync();
         return $"{stylist.FullName} was deleted.";
+    }
+
+    /// <summary>
+    /// Calculates the average rating per stylist with ONE query:
+    /// Reviews -> grouped by the appointment's stylist -> average + count.
+    /// </summary>
+    private async Task AddRatingsAsync(List<StylistDto> stylists)
+    {
+        var ratings = await db.Reviews
+            .GroupBy(r => r.Appointment.StylistId)
+            .Select(g => new { StylistId = g.Key, Average = g.Average(r => r.Rating), Count = g.Count() })
+            .ToDictionaryAsync(x => x.StylistId);
+
+        foreach (var stylist in stylists)
+        {
+            if (ratings.TryGetValue(stylist.StylistId, out var rating))
+            {
+                stylist.AverageRating = Math.Round(rating.Average, 1);
+                stylist.ReviewCount = rating.Count;
+            }
+        }
     }
 
     private async Task EnsureUniqueEmailAsync(string email, int? excludeId)

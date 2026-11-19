@@ -46,6 +46,16 @@
                     <i class="bi bi-x-lg"></i> Cancel
                 </button>
             }
+            @if (OnReview.HasDelegate && Appointment.CanBeReviewed)
+            {
+                <button class="btn btn-sm btn-gold" @onclick="() => OnReview.InvokeAsync(Appointment)">
+                    <i class="bi bi-star"></i> Review
+                </button>
+            }
+            else if (Appointment.HasReview)
+            {
+                <span class="small text-muted"><i class="bi bi-check2"></i> Reviewed</span>
+            }
         </div>
     </div>
 </div>
@@ -57,4 +67,5 @@
     // EventCallback<T> = "call this method in the parent, with this value".
     [Parameter] public EventCallback<AppointmentDto> OnCancel { get; set; }
     [Parameter] public EventCallback<AppointmentDto> OnReschedule { get; set; }
+    [Parameter] public EventCallback<AppointmentDto> OnReview { get; set; }
 }

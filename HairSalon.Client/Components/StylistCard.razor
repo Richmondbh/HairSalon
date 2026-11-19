@@ -9,6 +9,7 @@
             <div class="flex-grow-1">
                 <h3 class="h5 mb-0">@Stylist.FullName</h3>
                 <div class="text-muted small">@Stylist.Specialization</div>
+                <StarRating Value="Stylist.AverageRating" Count="Stylist.ReviewCount" />
             </div>
         </div>
 
@@ -28,6 +29,7 @@
                 <span class="badge text-bg-secondary">Not available</span>
             }
             <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-salon" href="@($"stylists/{Stylist.StylistId}")">Profile</a>
                 @if (Stylist.IsAvailable)
                 {
                     <a class="btn btn-sm btn-salon" href="@($"book?stylistId={Stylist.StylistId}")">Book</a>

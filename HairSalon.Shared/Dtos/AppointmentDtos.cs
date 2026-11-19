@@ -27,6 +27,7 @@ public class AppointmentDto
     public string CustomerId { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
+    public bool HasReview { get; set; }
 
     // ---- Helper properties: shared business logic, not sent as JSON ----
 
@@ -42,6 +43,10 @@ public class AppointmentDto
     /// <summary>Customers may cancel or move upcoming appointments.</summary>
     [JsonIgnore]
     public bool CanBeChanged => IsUpcoming;
+
+    /// <summary>Only completed appointments without a review can be reviewed.</summary>
+    [JsonIgnore]
+    public bool CanBeReviewed => Status == AppointmentStatus.Completed && !HasReview;
 }
 
 /// <summary>Sent by the booking form to POST api/appointments.</summary>

@@ -1,0 +1,90 @@
+@page "/stylists/{Id:int}"
+@inject StylistApiClient StylistApi
+@inject ReviewApiClient ReviewApi
+
+<PageTitle>@(_stylist?.FullName ?? "Stylist") | Nordic Hair Studio</PageTitle>
+
+<a href="stylists" class="d-inline-block mb-3"><i class="bi bi-arrow-left"></i> All stylists</a>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_stylist == null)
+{
+    @if (_error == null)
+    {
+        <LoadingSpinner />
+    }
+}
+else
+{
+    <div class="card stylist-profile mb-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row gap-4 align-items-md-center">
+            <div class="avatar avatar-lg">@_stylist.Initials</div>
+            <div class="flex-grow-1">
+                <h1 class="h2 mb-1">@_stylist.FullName</h1>
+                <div class="text-muted mb-2">@_stylist.Specialization &middot; @_stylist.YearsOfExperience years of experience</div>
+                <StarRating Value="_stylist.AverageRating" Count="_stylist.ReviewCount" Size="lg" />
+                <p class="mt-3 mb-0">@_stylist.Bio</p>
+            </div>
+            @if (_stylist.IsAvailable)
+            {
+                <a class="btn btn-salon btn-lg" href="@($"book?stylistId={_stylist.StylistId}")">
+                    <i class="bi bi-calendar-plus"></i> Book with @_stylist.FirstName
+                </a>
+            }
+            else
+            {
+                <span class="badge text-bg-secondary fs-6">Not taking bookings right now</span>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6">Rating breakdown</h2>
+                    @* LINQ in the UI: count how many reviews have 5, 4, 3, 2 and 1 stars. *@
+                    @for (var stars = 5; stars >= 1; stars--)
+                    {
+                        var count = _reviews.Count(r => r.Rating == stars);
+                        var percent = _reviews.Count == 0 ? 0 : count * 100 / _reviews.Count;
+                        <div class="d-flex align-items-center gap-2 small mb-1">
+                            <span class="text-nowrap" style="width: 3.5rem">@stars <i class="bi bi-star-fill text-warning"></i></span>
+                            <div class="progress flex-grow-1" style="height: .5rem">
+                                <div class="progress-bar bg-warning" style="width: @percent%"></div>
+                            </div>
+                            <span class="text-muted" style="width: 2rem">@count</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <h2 class="h5 mb-3">Reviews (@_reviews.Count)</h2>
+            <ReviewList Reviews="_reviews" Columns="1" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private StylistDto? _stylist;
+    private List<ReviewDto> _reviews = new();
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _error = null;
+            _stylist = await StylistApi.GetByIdAsync(Id);
+            _reviews = await ReviewApi.GetForStylistAsync(Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

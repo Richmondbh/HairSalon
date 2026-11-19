@@ -43,6 +43,7 @@ else
             <AppointmentCard Appointment="appointment"
                              OnCancel="AskCancel"
                              OnReschedule="OpenReschedule"
+                             OnReview="OpenReview"
                              />
         }
     </div>
@@ -54,6 +55,8 @@ else
 
 <RescheduleDialog @bind-IsOpen="_rescheduleOpen" Appointment="_selected" OnRescheduled="OnRescheduledAsync" />
 
+<ReviewDialog @bind-IsOpen="_reviewOpen" Appointment="_selected" OnReviewed="LoadAsync" />
+
 @code {
     private readonly (string Key, string Label)[] _tabs = [("upcoming", "Upcoming"), ("history", "History"), ("all", "All")];
     private string _filter = "upcoming";
@@ -64,6 +67,7 @@ else
     private AppointmentDto? _selected;
     private bool _confirmOpen;
     private bool _rescheduleOpen;
+    private bool _reviewOpen;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -122,5 +126,11 @@ else
     {
         Toasts.ShowSuccess($"Moved to {Format.Date(updated.AppointmentDate)} at {Format.Time(updated.StartTime)}. The salon will confirm the new time.");
         await LoadAsync();
+    }
+
+    private void OpenReview(AppointmentDto appointment)
+    {
+        _selected = appointment;
+        _reviewOpen = true;
     }
 }

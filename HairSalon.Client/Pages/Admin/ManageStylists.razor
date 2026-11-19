@@ -30,6 +30,7 @@ else
                         <th>Specialization</th>
                         <th>Contact</th>
                         <th class="text-end">Experience</th>
+                        <th>Rating</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -50,6 +51,7 @@ else
                                 <div class="text-muted">@stylist.PhoneNumber</div>
                             </td>
                             <td class="text-end">@stylist.YearsOfExperience years</td>
+                            <td><StarRating Value="stylist.AverageRating" Count="stylist.ReviewCount" /></td>
                             <td>
                                 @if (stylist.IsAvailable)
                                 {

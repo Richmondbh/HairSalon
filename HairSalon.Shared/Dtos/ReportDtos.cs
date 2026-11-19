@@ -27,6 +27,7 @@ public class StylistPerformanceDto
     public int CompletedAppointments { get; set; }
     public decimal Revenue { get; set; }
     public double CancellationRate { get; set; }
+    public double AverageRating { get; set; }
 }
 
 /// <summary>The full yearly report (Grade A: advanced reporting and revenue analysis).</summary>

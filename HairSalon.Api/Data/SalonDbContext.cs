@@ -17,6 +17,7 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
     public DbSet<Stylist> Stylists => Set<Stylist>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     /// <summary>
     /// The "Fluent API": configuration that cannot (or should not) be done with attributes,
@@ -77,6 +78,17 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
                   .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(n => new { n.UserId, n.IsRead });
+        });
+
+        builder.Entity<Review>(entity =>
+        {
+            // ONE-TO-ONE: an appointment has at most one review.
+            entity.HasOne(r => r.Appointment)
+                  .WithOne(a => a.Review)
+                  .HasForeignKey<Review>(r => r.AppointmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(r => r.AppointmentId).IsUnique();
         });
     }
 }

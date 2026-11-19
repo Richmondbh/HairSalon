@@ -276,7 +276,7 @@ public class AppointmentService(
             AppointmentStatus.Confirmed => ("Booking confirmed",
                 $"Your {Describe(appointment)} is confirmed. See you then!"),
             AppointmentStatus.Completed => ("Thank you for your visit!",
-                $"We hope you enjoyed your {appointment.Service.Name}."),
+                $"We hope you enjoyed your {appointment.Service.Name}. You can now leave a review under 'My appointments'."),
             AppointmentStatus.Cancelled => ("Appointment cancelled",
                 $"The salon has cancelled your {Describe(appointment)}."),
             _ => ("Appointment updated", $"Your {Describe(appointment)} is now {dto.Status}.")
@@ -365,6 +365,7 @@ public class AppointmentService(
             .Include(a => a.Service)
             .Include(a => a.Stylist)
             .Include(a => a.Customer);
+        query = query.Include(a => a.Review);
         return query;
     }
 

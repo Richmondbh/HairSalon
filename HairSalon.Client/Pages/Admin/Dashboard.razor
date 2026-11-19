@@ -44,6 +44,10 @@ else
         <div class="col">
             <StatCard Icon="bi-calendar-check" Label="Appointments in total" Value="@_dashboard.TotalAppointments.ToString()" Color="gold" />
         </div>
+        <div class="col">
+            <StatCard Icon="bi-star-fill" Label="Average rating" Value="@_dashboard.AverageRating.ToString("0.0")" Color="teal"
+                      SubText="@($"from {_dashboard.TotalReviews} reviews")" />
+        </div>
     </div>
 
     <div class="row g-4 mb-4">

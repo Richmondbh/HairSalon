@@ -32,6 +32,9 @@ public class DashboardDto
     public decimal EstimatedRevenue { get; set; }
     public decimal RevenueThisMonth { get; set; }
 
+    public double AverageRating { get; set; }
+    public int TotalReviews { get; set; }
+
     public List<PopularServiceDto> PopularServices { get; set; } = new();
     public List<ChartPointDto> BookingsNext7Days { get; set; } = new();
     public List<ChartPointDto> StatusBreakdown { get; set; } = new();

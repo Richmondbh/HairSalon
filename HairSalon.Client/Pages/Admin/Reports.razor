@@ -129,6 +129,7 @@ else
                                     <th class="text-end">Completed</th>
                                     <th class="text-end">Revenue</th>
                                     <th class="text-end">Cancelled</th>
+                                    <th>Rating</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -139,6 +140,7 @@ else
                                         <td class="text-end">@s.CompletedAppointments</td>
                                         <td class="text-end">@Format.Price(s.Revenue)</td>
                                         <td class="text-end">@s.CancellationRate.ToString("0.0") %</td>
+                                        <td><StarRating Value="s.AverageRating" /></td>
                                     </tr>
                                 }
                             </tbody>

@@ -16,6 +16,10 @@ public class StylistDto
     public bool IsAvailable { get; set; }
     public string Bio { get; set; } = string.Empty;
 
+    // Filled in by the API from the Reviews table (Grade A: reviews and ratings).
+    public double AverageRating { get; set; }
+    public int ReviewCount { get; set; }
+
     /// <summary>Calculated on the fly; [JsonIgnore] keeps it out of the JSON.</summary>
     [JsonIgnore]
     public string FullName => $"{FirstName} {LastName}";

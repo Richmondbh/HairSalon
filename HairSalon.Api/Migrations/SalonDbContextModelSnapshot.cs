@@ -191,6 +191,33 @@ namespace HairSalon.Api.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("HairSalon.Api.Models.Review", b =>
+                {
+                    b.Property<int>("ReviewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ReviewId");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("HairSalon.Api.Models.Service", b =>
                 {
                     b.Property<int>("ServiceId")
@@ -446,6 +473,17 @@ namespace HairSalon.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HairSalon.Api.Models.Review", b =>
+                {
+                    b.HasOne("HairSalon.Api.Models.Appointment", "Appointment")
+                        .WithOne("Review")
+                        .HasForeignKey("HairSalon.Api.Models.Review", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -500,6 +538,11 @@ namespace HairSalon.Api.Migrations
             modelBuilder.Entity("HairSalon.Api.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Appointments");
+                });
+
+            modelBuilder.Entity("HairSalon.Api.Models.Appointment", b =>
+                {
+                    b.Navigation("Review");
                 });
 
             modelBuilder.Entity("HairSalon.Api.Models.Service", b =>

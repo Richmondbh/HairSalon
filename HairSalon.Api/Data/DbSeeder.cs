@@ -62,6 +62,7 @@ public static class DbSeeder
         await SeedStylistsAsync(db);
         await SeedAppointmentsAsync(db, customers);
         await SeedNotificationsAsync(db, admin, customers);
+        await SeedReviewsAsync(db, customers[0]);
 
         logger.LogInformation("Database is ready.");
     }
@@ -293,6 +294,44 @@ public static class DbSeeder
             Type = NotificationType.Booking,
             CreatedAt = DateTime.Now.AddHours(-1)
         });
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedReviewsAsync(SalonDbContext db, ApplicationUser anna)
+    {
+        if (await db.Reviews.AnyAsync()) return;
+
+        var random = new Random(18);
+        var comments = new Dictionary<int, string[]>
+        {
+            [5] = ["Absolutely loved it - best haircut I've had!", "Fantastic result and such a friendly atmosphere.", "Exactly what I asked for. Will definitely come back.", "Professional, quick and the colour is perfect."],
+            [4] = ["Very happy with the result.", "Great service, a little wait before we started.", "Lovely stylist and a good result."],
+            [3] = ["Okay result, but not quite what I hoped for.", "Decent cut, the salon was very busy."]
+        };
+
+        var completed = await db.Appointments
+            .Where(a => a.Status == AppointmentStatus.Completed)
+            .OrderBy(a => a.AppointmentDate)
+            .ToListAsync();
+
+        // Leave Anna's most recent visit without a review so you can test writing one.
+        var annasLatest = completed.Where(a => a.CustomerId == anna.Id).OrderByDescending(a => a.AppointmentDate).FirstOrDefault();
+
+        foreach (var appointment in completed.Where(a => a != annasLatest))
+        {
+            if (random.Next(100) >= 75) continue;   // about 75 % of visits get a review
+
+            var roll = random.Next(100);
+            var rating = roll < 50 ? 5 : roll < 85 ? 4 : 3;
+            db.Reviews.Add(new Review
+            {
+                AppointmentId = appointment.AppointmentId,
+                Rating = rating,
+                Comment = comments[rating][random.Next(comments[rating].Length)],
+                CreatedAt = appointment.AppointmentDate.ToDateTime(appointment.EndTime).AddDays(1)
+            });
+        }
 
         await db.SaveChangesAsync();
     }

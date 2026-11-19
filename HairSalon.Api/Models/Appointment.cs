@@ -44,4 +44,7 @@ public class Appointment
 
     public int StylistId { get; set; }
     public Stylist Stylist { get; set; } = null!;
+
+    // One appointment can have at most one review (one-to-one).
+    public Review? Review { get; set; }
 }

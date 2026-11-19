@@ -114,6 +114,11 @@ public class DashboardService(SalonDbContext db, UserManager<ApplicationUser> us
                 .ToList()
         };
 
+        dashboard.TotalReviews = await db.Reviews.CountAsync();
+        dashboard.AverageRating = dashboard.TotalReviews == 0
+            ? 0
+            : Math.Round(await db.Reviews.AverageAsync(r => r.Rating), 1);
+
         // Today's appointments need the full details, so load them with Include.
         var todays = await db.Appointments
             .AsNoTracking()
@@ -148,6 +153,12 @@ public class DashboardService(SalonDbContext db, UserManager<ApplicationUser> us
 
         // ToLookup groups the rows by month once; looking up a month with no rows gives an empty list.
         var byMonth = rows.ToLookup(r => r.Date.Month);
+
+        var ratingsByStylist = await db.Reviews
+            .Where(r => r.Appointment.AppointmentDate >= first && r.Appointment.AppointmentDate <= last)
+            .GroupBy(r => r.Appointment.StylistId)
+            .Select(g => new { StylistId = g.Key, Average = g.Average(r => r.Rating) })
+            .ToDictionaryAsync(x => x.StylistId, x => x.Average);
 
         return new ReportDto
         {
@@ -216,6 +227,7 @@ public class DashboardService(SalonDbContext db, UserManager<ApplicationUser> us
                     CompletedAppointments = g.Count(r => r.Status == AppointmentStatus.Completed),
                     Revenue = g.Where(r => r.Status == AppointmentStatus.Completed).Sum(r => r.Price),
                     CancellationRate = Math.Round(100.0 * g.Count(r => r.Status == AppointmentStatus.Cancelled) / g.Count(), 1),
+                    AverageRating = ratingsByStylist.TryGetValue(g.Key.StylistId, out var avg) ? Math.Round(avg, 1) : 0
                 })
                 .OrderByDescending(s => s.Revenue)
                 .ToList()
