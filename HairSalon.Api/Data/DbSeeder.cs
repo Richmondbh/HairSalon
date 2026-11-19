@@ -61,6 +61,7 @@ public static class DbSeeder
         await SeedServicesAsync(db);
         await SeedStylistsAsync(db);
         await SeedAppointmentsAsync(db, customers);
+        await SeedNotificationsAsync(db, admin, customers);
 
         logger.LogInformation("Database is ready.");
     }
@@ -245,4 +246,54 @@ public static class DbSeeder
     /// <summary>Moves a Sunday one day back (-1) or forward (+1).</summary>
     private static DateOnly OpenDay(DateOnly date, int direction) =>
         SalonIsOpen(date) ? date : date.AddDays(direction);
+
+    private static async Task SeedNotificationsAsync(SalonDbContext db, ApplicationUser admin, List<ApplicationUser> customers)
+    {
+        if (await db.Notifications.AnyAsync()) return;
+
+        foreach (var customer in customers)
+        {
+            db.Notifications.Add(new Notification
+            {
+                UserId = customer.Id,
+                Title = "Welcome to Nordic Hair Studio!",
+                Message = "Thank you for creating an account. You can now book appointments online.",
+                Type = NotificationType.General,
+                IsRead = customer != customers[0],
+                CreatedAt = customer.RegistrationDate
+            });
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var annasNext = await db.Appointments
+            .Include(a => a.Service)
+            .Where(a => a.CustomerId == customers[0].Id && a.Status == AppointmentStatus.Confirmed && a.AppointmentDate >= today)
+            .OrderBy(a => a.AppointmentDate)
+            .FirstOrDefaultAsync();
+
+        if (annasNext != null)
+        {
+            db.Notifications.Add(new Notification
+            {
+                UserId = customers[0].Id,
+                Title = "Booking confirmed",
+                Message = $"Your {annasNext.Service.Name} on {annasNext.AppointmentDate:d MMM} at {annasNext.StartTime:HH\\:mm} is confirmed.",
+                Type = NotificationType.StatusChange,
+                AppointmentId = annasNext.AppointmentId,
+                CreatedAt = DateTime.Now.AddHours(-5)
+            });
+        }
+
+        var pending = await db.Appointments.CountAsync(a => a.Status == AppointmentStatus.Pending);
+        db.Notifications.Add(new Notification
+        {
+            UserId = admin.Id,
+            Title = "Bookings waiting for approval",
+            Message = $"There are {pending} pending bookings. Open 'Appointments' to confirm them.",
+            Type = NotificationType.Booking,
+            CreatedAt = DateTime.Now.AddHours(-1)
+        });
+
+        await db.SaveChangesAsync();
+    }
 }

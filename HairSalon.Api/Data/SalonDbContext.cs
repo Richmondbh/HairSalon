@@ -16,6 +16,7 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
     public DbSet<Service> Services => Set<Service>();
     public DbSet<Stylist> Stylists => Set<Stylist>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     /// <summary>
     /// The "Fluent API": configuration that cannot (or should not) be done with attributes,
@@ -57,6 +58,25 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
 
             // An index makes "find this stylist's bookings on this date" fast.
             entity.HasIndex(a => new { a.StylistId, a.AppointmentDate });
+        });
+
+        builder.Entity<Notification>(entity =>
+        {
+            entity.Property(n => n.Type).HasConversion<string>().HasMaxLength(20);
+
+            // A user has many notifications (no navigation property on the user side).
+            entity.HasOne(n => n.User)
+                  .WithMany()
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // If the appointment is deleted, keep the notification but clear the link.
+            entity.HasOne(n => n.Appointment)
+                  .WithMany()
+                  .HasForeignKey(n => n.AppointmentId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(n => new { n.UserId, n.IsRead });
         });
     }
 }

@@ -141,6 +141,9 @@ else
                 <strong>@_selected.ServiceName</strong> for @_selected.CustomerName<br />
                 <span class="text-muted">@Format.Date(_selected.AppointmentDate) at @Format.Time(_selected.StartTime) with @_selected.StylistName</span>
             </p>
+            <label class="form-label" for="status-message">Message to the customer <span class="text-muted">(optional)</span></label>
+            <textarea id="status-message" class="form-control" rows="2" maxlength="300" @bind="_statusMessage"
+                      placeholder="Included in the customer's notification"></textarea>
         }
     </ChildContent>
     <Footer>
@@ -170,6 +173,7 @@ else
     private bool _rescheduleOpen;
     private AppointmentStatus _newStatus;
     private bool _saving;
+    private string? _statusMessage;
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
@@ -254,6 +258,7 @@ else
     {
         _selected = appointment;
         _newStatus = newStatus;
+        _statusMessage = null;
         _statusOpen = true;
     }
 
@@ -266,6 +271,7 @@ else
             await AppointmentApi.UpdateStatusAsync(_selected.AppointmentId, new UpdateStatusDto
             {
                 Status = _newStatus,
+                Message = _statusMessage
             });
             Toasts.ShowSuccess($"{_selected.ServiceName} for {_selected.CustomerName} is now {_newStatus}.");
             _statusOpen = false;

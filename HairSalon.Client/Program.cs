@@ -51,9 +51,11 @@ builder.Services.AddScoped<StylistApiClient>();
 builder.Services.AddScoped<AppointmentApiClient>();
 builder.Services.AddScoped<DashboardApiClient>();
 builder.Services.AddScoped<CustomerApiClient>();
+builder.Services.AddScoped<NotificationApiClient>();
 
 // ---------- Shared state (component communication) ----------
 // One instance shared by all components: a component raises an event, others react.
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<NotificationState>();
 
 await builder.Build().RunAsync();

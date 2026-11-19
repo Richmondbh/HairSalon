@@ -1,0 +1,61 @@
+@implements IDisposable
+@inject NotificationState NotificationState
+@inject ToastService Toasts
+@*
+    The bell in the menu with the number of unread notifications.
+    - It POLLS the API every 30 seconds (asks "anything new?").
+    - It SUBSCRIBES to NotificationState.OnChange, so when the Notifications page marks
+      something as read, the number here changes at once (shared state).
+    The bell is only rendered for logged-in users (inside <AuthorizeView> in NavMenu),
+    so it starts polling at login and is disposed (stops) at logout.
+*@
+
+<a href="notifications" class="nav-link notification-bell" title="Notifications">
+    <i class="bi @(NotificationState.UnreadCount > 0 ? "bi-bell-fill" : "bi-bell")"></i>
+    @if (NotificationState.UnreadCount > 0)
+    {
+        <span class="badge rounded-pill bg-danger">@(NotificationState.UnreadCount > 9 ? "9+" : NotificationState.UnreadCount.ToString())</span>
+    }
+    <span class="d-lg-none ms-1">Notifications</span>
+</a>
+
+@code {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(30);
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        NotificationState.OnChange += OnStateChanged;
+        _ = PollAsync();   // start the loop without waiting for it
+    }
+
+    private async Task PollAsync()
+    {
+        var firstCheck = true;
+        while (!_cts.IsCancellationRequested)
+        {
+            var newOnes = await NotificationState.RefreshAsync();
+            if (!firstCheck && newOnes > 0)
+                Toasts.ShowInfo($"You have {newOnes} new notification{(newOnes == 1 ? "" : "s")}.");
+            firstCheck = false;
+
+            try
+            {
+                await Task.Delay(PollInterval, _cts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        NotificationState.OnChange -= OnStateChanged;
+        NotificationState.SetUnreadCount(0);
+    }
+}

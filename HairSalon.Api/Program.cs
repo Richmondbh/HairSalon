@@ -76,6 +76,7 @@ builder.Services.AddScoped<StylistService>();
 builder.Services.AddScoped<AppointmentService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<NotificationService>();
 
 // ---------- 5. Controllers + JSON ----------
 // Enums are sent as text ("Confirmed") instead of numbers (1) - easier to read and test.

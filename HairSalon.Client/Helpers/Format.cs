@@ -50,4 +50,24 @@ public static class Format
         AppointmentStatus.Cancelled => "bi-x-circle",
         _ => "bi-circle"
     };
+
+    public static string NotificationIcon(NotificationType type) => type switch
+    {
+        NotificationType.Booking => "bi-calendar-plus",
+        NotificationType.StatusChange => "bi-arrow-repeat",
+        NotificationType.Reminder => "bi-alarm",
+        NotificationType.Review => "bi-star",
+        _ => "bi-info-circle"
+    };
+
+    /// <summary>"just now", "5 min ago", "3 h ago", "2 days ago" or a date.</summary>
+    public static string TimeAgo(DateTime time)
+    {
+        var span = DateTime.Now - time;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes} min ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours} h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays} day{((int)span.TotalDays == 1 ? "" : "s")} ago";
+        return time.ToString("d MMM yyyy");
+    }
 }

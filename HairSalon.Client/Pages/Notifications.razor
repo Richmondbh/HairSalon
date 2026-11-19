@@ -1,0 +1,143 @@
+@page "/notifications"
+@attribute [Authorize]
+@inject NotificationApiClient NotificationApi
+@inject NotificationState NotificationState
+@inject ToastService Toasts
+
+<PageTitle>Notifications | Nordic Hair Studio</PageTitle>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <h1>Notifications</h1>
+        <p class="text-muted mb-0">Booking updates, confirmations and reminders.</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <div class="form-check form-switch me-2">
+            <input class="form-check-input" type="checkbox" id="unreadOnly" checked="@_unreadOnly" @onchange="ToggleUnreadOnlyAsync" />
+            <label class="form-check-label" for="unreadOnly">Unread only</label>
+        </div>
+        <button class="btn btn-outline-salon" disabled="@(NotificationState.UnreadCount == 0)" @onclick="MarkAllAsReadAsync">
+            <i class="bi bi-check2-all"></i> Mark all as read
+        </button>
+    </div>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_notifications == null)
+{
+    <LoadingSpinner />
+}
+else if (_notifications.Count == 0)
+{
+    <EmptyState Icon="bi-bell-slash" Title="No notifications" Text="You're all caught up!" />
+}
+else
+{
+    <div class="list-group notification-list">
+        @foreach (var n in _notifications)
+        {
+            <div class="list-group-item d-flex gap-3 @(n.IsRead ? "" : "unread")">
+                <div class="notification-icon"><i class="bi @Format.NotificationIcon(n.Type)"></i></div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between gap-2">
+                        <strong>@n.Title</strong>
+                        <span class="small text-muted text-nowrap" title="@n.CreatedAt.ToString("g")">@Format.TimeAgo(n.CreatedAt)</span>
+                    </div>
+                    <div class="small">@n.Message</div>
+                    @if (n.AppointmentId != null)
+                    {
+                        <AuthorizeView Roles="@Roles.Admin">
+                            <Authorized><a class="small" href="admin/appointments">Open appointments</a></Authorized>
+                            <NotAuthorized><a class="small" href="my-appointments">Open my appointments</a></NotAuthorized>
+                        </AuthorizeView>
+                    }
+                </div>
+                <div class="d-flex flex-column gap-1">
+                    @if (!n.IsRead)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary" title="Mark as read" @onclick="() => MarkAsReadAsync(n)">
+                            <i class="bi bi-check2"></i>
+                        </button>
+                    }
+                    <button class="btn btn-sm btn-outline-danger" title="Delete" @onclick="() => DeleteAsync(n)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<NotificationDto>? _notifications;
+    private bool _unreadOnly;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _notifications = await NotificationApi.GetMineAsync(_unreadOnly);
+            await NotificationState.RefreshAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _notifications = new();
+        }
+    }
+
+    private async Task ToggleUnreadOnlyAsync(ChangeEventArgs e)
+    {
+        _unreadOnly = e.Value is true;
+        await LoadAsync();
+    }
+
+    private async Task MarkAsReadAsync(NotificationDto notification)
+    {
+        try
+        {
+            await NotificationApi.MarkAsReadAsync(notification.NotificationId);
+            notification.IsRead = true;
+            // Tell the shared state -> the bell in the menu updates immediately.
+            NotificationState.SetUnreadCount(NotificationState.UnreadCount - 1);
+            if (_unreadOnly) _notifications?.Remove(notification);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+    }
+
+    private async Task MarkAllAsReadAsync()
+    {
+        try
+        {
+            await NotificationApi.MarkAllAsReadAsync();
+            NotificationState.SetUnreadCount(0);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+    }
+
+    private async Task DeleteAsync(NotificationDto notification)
+    {
+        try
+        {
+            await NotificationApi.DeleteAsync(notification.NotificationId);
+            _notifications?.Remove(notification);
+            if (!notification.IsRead)
+                NotificationState.SetUnreadCount(NotificationState.UnreadCount - 1);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+    }
+}
