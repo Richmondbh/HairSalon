@@ -1,6 +1,7 @@
 using HairSalon.Api.Infrastructure;
 using HairSalon.Api.Models;
 using HairSalon.Shared.Dtos;
+using HairSalon.Shared.Enums;
 using HairSalon.Shared.Rules;
 using Microsoft.AspNetCore.Identity;
 
@@ -12,7 +13,8 @@ namespace HairSalon.Api.Services;
 /// </summary>
 public class AuthService(
     UserManager<ApplicationUser> userManager,
-    TokenService tokenService)
+    TokenService tokenService,
+    NotificationService notificationService)
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
@@ -36,6 +38,9 @@ public class AuthService(
 
         // Everyone who registers is a customer. Admins are created by the seeder.
         await userManager.AddToRoleAsync(user, Roles.Customer);
+
+        await notificationService.NotifyUserAsync(user.Id, "Welcome to Nordic Hair Studio!",
+            "Thank you for creating an account. You can now book appointments online.", NotificationType.General);
 
         // Log the new user in straight away by returning a token.
         return tokenService.CreateToken(user, new List<string> { Roles.Customer });

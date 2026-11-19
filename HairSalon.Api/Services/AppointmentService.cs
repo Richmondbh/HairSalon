@@ -16,7 +16,8 @@ namespace HairSalon.Api.Services;
 /// which status changes are allowed), so they are enforced no matter which client calls the API.
 /// </summary>
 public class AppointmentService(
-    SalonDbContext db)
+    SalonDbContext db,
+    NotificationService notifications)
 {
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
@@ -108,6 +109,13 @@ public class AppointmentService(
 
         var created = await LoadAsync(appointment.AppointmentId);
 
+        await notifications.NotifyUserAsync(customerId, "Booking received",
+            $"We have received your booking: {Describe(created)}. You will be notified when the salon confirms it.",
+            NotificationType.Booking, created.AppointmentId);
+        await notifications.NotifyAdminsAsync("New booking",
+            $"{created.Customer.FullName} booked {Describe(created)}. Please confirm it.",
+            NotificationType.Booking, created.AppointmentId);
+
         return created.ToDto();
     }
 
@@ -159,6 +167,15 @@ public class AppointmentService(
         appointment.Status = AppointmentStatus.Cancelled;
         await db.SaveChangesAsync();
 
+        if (isAdmin)
+            await notifications.NotifyUserAsync(appointment.CustomerId, "Appointment cancelled",
+                $"The salon has cancelled your {Describe(appointment)}. Please contact us or book a new time.",
+                NotificationType.StatusChange, appointment.AppointmentId);
+        else
+            await notifications.NotifyAdminsAsync("Booking cancelled",
+                $"{appointment.Customer.FullName} cancelled {Describe(appointment)}. The time is free again.",
+                NotificationType.StatusChange, appointment.AppointmentId);
+
         return appointment.ToDto();
     }
 
@@ -191,6 +208,15 @@ public class AppointmentService(
         appointment.EndTime = start.AddMinutes(duration);
         appointment.Status = isAdmin ? AppointmentStatus.Confirmed : AppointmentStatus.Pending;
         await db.SaveChangesAsync();
+
+        if (isAdmin)
+            await notifications.NotifyUserAsync(appointment.CustomerId, "Appointment moved",
+                $"The salon moved your appointment. New time: {Describe(appointment)}.",
+                NotificationType.StatusChange, appointment.AppointmentId);
+        else
+            await notifications.NotifyAdminsAsync("Booking moved",
+                $"{appointment.Customer.FullName} moved {oldDescription} to {Describe(appointment)}. Please confirm it.",
+                NotificationType.Booking, appointment.AppointmentId);
 
         return appointment.ToDto();
     }
@@ -243,6 +269,23 @@ public class AppointmentService(
 
         appointment.Status = dto.Status;
         await db.SaveChangesAsync();
+
+        var (title, text) = dto.Status switch
+        {
+            AppointmentStatus.Confirmed => ("Booking confirmed",
+                $"Your {Describe(appointment)} is confirmed. See you then!"),
+            AppointmentStatus.Completed => ("Thank you for your visit!",
+                $"We hope you enjoyed your {appointment.Service.Name}."),
+            AppointmentStatus.Cancelled => ("Appointment cancelled",
+                $"The salon has cancelled your {Describe(appointment)}."),
+            _ => ("Appointment updated", $"Your {Describe(appointment)} is now {dto.Status}.")
+        };
+
+        if (!string.IsNullOrWhiteSpace(dto.Message))
+            text += $" Message from the salon: {dto.Message.Trim()}";
+
+        await notifications.NotifyUserAsync(appointment.CustomerId, title, text,
+            NotificationType.StatusChange, appointment.AppointmentId);
 
         return appointment.ToDto();
     }
