@@ -31,7 +31,7 @@ Many small salons still take bookings by phone and keep track of them on paper. 
 
 The project is a complete full-stack application. A **Blazor WebAssembly** front end talks to a secured **ASP.NET Core Web API** over HTTPS. The API uses **Entity Framework Core** and **ASP.NET Core Identity** with **JWT** authentication, and it is organised in clear layers with all business rules in the server.
 
-> Built as the final assignment in *Programming in C# III* at Malmö University, then extended into a portfolio project.
+> Built as a project in *Programming in C# III* at Malmö University, then extended into a portfolio project.
 
 ---
 
@@ -156,7 +156,7 @@ erDiagram
 
 ---
 
-## 🧰 Tech stack
+##  Tech stack
 
 | Area | Technology |
 |---|---|
@@ -212,7 +212,7 @@ dotnet run --project HairSalon.Client --launch-profile https
 
 On first start the API **creates the database, applies the migrations and seeds realistic demo data**: services, stylists, customers, about 70 appointments, reviews and notifications, all relative to today's date.
 
-> 💡 Delete `salon.db*` in `HairSalon.Api` to start again with fresh demo data.
+>  Delete `salon.db*` in `HairSalon.Api` to start again with fresh demo data.
 
 ### Demo accounts
 | Role | Email | Password |
