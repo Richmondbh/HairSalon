@@ -100,9 +100,6 @@ The project is a complete full-stack application. A **Blazor WebAssembly** front
 
 ---
 
-##  Architecture
-
-![Architecture diagram](docs/architecture.svg)
 
 ```mermaid
 flowchart LR
@@ -139,7 +136,7 @@ flowchart LR
 - **Safe deletes.** Services and stylists with bookings are deactivated instead of deleted.
 - **Background processing.** A `BackgroundService` with `PeriodicTimer` sends reminders, using its own DI scope for each run.
 
- There is a full walk-through in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: request flow, authentication flow, data model, component communication, LINQ and dependency injection lifetimes.
+
 
 ### Data model
 
