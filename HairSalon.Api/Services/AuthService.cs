@@ -14,7 +14,8 @@ namespace HairSalon.Api.Services;
 public class AuthService(
     UserManager<ApplicationUser> userManager,
     TokenService tokenService,
-    NotificationService notificationService)
+    NotificationService notificationService,
+    LoyaltyService loyaltyService)
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
@@ -61,5 +62,38 @@ public class AuthService(
 
         var roles = await userManager.GetRolesAsync(user);
         return tokenService.CreateToken(user, roles);
+    }
+
+    public async Task<UserProfileDto> GetProfileAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+                   ?? throw new NotFoundException("User not found.");
+
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Email = user.Email ?? string.Empty,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            PhoneNumber = user.PhoneNumber,
+            RegistrationDate = user.RegistrationDate,
+            Loyalty = await loyaltyService.GetSummaryAsync(userId)
+        };
+    }
+
+    public async Task<UserProfileDto> UpdateProfileAsync(string userId, UpdateProfileDto dto)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+                   ?? throw new NotFoundException("User not found.");
+
+        user.FirstName = dto.FirstName.Trim();
+        user.LastName = dto.LastName.Trim();
+        user.PhoneNumber = dto.PhoneNumber;
+
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new BusinessRuleException(string.Join(" ", result.Errors.Select(e => e.Description)));
+
+        return await GetProfileAsync(userId);
     }
 }

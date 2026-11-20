@@ -1,3 +1,4 @@
+using HairSalon.Api.Infrastructure;
 using HairSalon.Api.Services;
 using HairSalon.Shared.Dtos;
 using HairSalon.Shared.Enums;
@@ -52,4 +53,10 @@ public class ServicesController(ServiceCatalogService serviceCatalog) : Controll
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiMessage>> Delete(int id) =>
         Ok(new ApiMessage(await serviceCatalog.DeleteAsync(id)));
+
+    /// <summary>GET api/services/recommended - personal recommendations for the logged-in customer.</summary>
+    [Authorize]
+    [HttpGet("recommended")]
+    public async Task<ActionResult<List<ServiceDto>>> GetRecommended([FromQuery] int count = 3) =>
+        Ok(await serviceCatalog.GetRecommendedAsync(User.GetUserId(), Math.Clamp(count, 1, 10)));
 }

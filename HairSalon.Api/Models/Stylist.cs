@@ -19,13 +19,13 @@ public class Stylist
     [MaxLength(20)]
     public string PhoneNumber { get; set; } = string.Empty;
 
-    /// e.g. "Hair Cutting", "Coloring", "Bridal Styling".
+    /// <summary>e.g. "Hair Cutting", "Coloring", "Bridal Styling".</summary>
     [MaxLength(100)]
     public string Specialization { get; set; } = string.Empty;
 
     public int YearsOfExperience { get; set; }
 
-    /// Unavailable stylists cannot be booked (holiday, sick leave, left the salon...).
+    /// <summary>Unavailable stylists cannot be booked (holiday, sick leave, left the salon...).</summary>
     public bool IsAvailable { get; set; } = true;
 
     [MaxLength(1000)]
@@ -35,4 +35,7 @@ public class Stylist
 
     // One stylist -> many appointments.
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    // The customers who marked this stylist as a favourite.
+    public ICollection<FavoriteStylist> FavoritedBy { get; set; } = new List<FavoriteStylist>();
 }

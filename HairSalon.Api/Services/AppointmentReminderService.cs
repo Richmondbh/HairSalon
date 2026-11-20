@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// APPOINTMENT REMINDERS (Grade A) - a BACKGROUND SERVICE.
+/// APPOINTMENT REMINDERS - a BACKGROUND SERVICE.
 ///
 /// A BackgroundService starts together with the API and keeps running in the background.
 /// Every few minutes (appsettings.json: Reminders:CheckIntervalMinutes) it looks for

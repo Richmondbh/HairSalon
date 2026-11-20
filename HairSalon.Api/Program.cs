@@ -78,6 +78,8 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<LoyaltyService>();
+builder.Services.AddScoped<FavoriteService>();
 
 // A background service that runs for as long as the API runs and sends reminders.
 builder.Services.AddHostedService<AppointmentReminderService>();

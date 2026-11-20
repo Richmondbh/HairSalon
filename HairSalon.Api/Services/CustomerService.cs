@@ -73,6 +73,8 @@ public class CustomerService(SalonDbContext db, UserManager<ApplicationUser> use
             TotalSpent = summary.TotalSpent,
             LastVisit = summary.LastVisit,
             IsLocked = summary.IsLocked,
+            LoyaltyPoints = summary.LoyaltyPoints,
+            LoyaltyTier = summary.LoyaltyTier,
             // The service/stylist this customer books most often.
             FavoriteService = notCancelled.GroupBy(a => a.Service.Name)
                 .OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault(),
@@ -112,6 +114,7 @@ public class CustomerService(SalonDbContext db, UserManager<ApplicationUser> use
     {
         var completed = rows.Where(r => r.Status == AppointmentStatus.Completed).ToList();
         var totalSpent = completed.Sum(r => r.Price);
+        var points = LoyaltyRules.CalculatePoints(totalSpent);
 
         return new CustomerDto
         {
@@ -126,6 +129,8 @@ public class CustomerService(SalonDbContext db, UserManager<ApplicationUser> use
             TotalSpent = totalSpent,
             LastVisit = completed.Count == 0 ? null : completed.Max(r => r.Date),
             IsLocked = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.Now,
+            LoyaltyPoints = points,
+            LoyaltyTier = LoyaltyRules.GetTier(points),
         };
     }
 }

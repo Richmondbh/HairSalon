@@ -17,7 +17,8 @@ namespace HairSalon.Api.Services;
 /// </summary>
 public class AppointmentService(
     SalonDbContext db,
-    NotificationService notifications)
+    NotificationService notifications,
+    LoyaltyService loyalty)
 {
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
@@ -103,6 +104,10 @@ public class AppointmentService(
             StylistId = stylist.StylistId,
             CreatedAt = DateTime.Now
         };
+
+        // LOYALTY: Silver and Gold customers get a discount on new bookings.
+        appointment.DiscountPercent = await loyalty.GetDiscountPercentAsync(customerId);
+        appointment.Price = Math.Round(service.Price * (100 - appointment.DiscountPercent) / 100m, 0);
 
         db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
@@ -284,6 +289,12 @@ public class AppointmentService(
 
         if (!string.IsNullOrWhiteSpace(dto.Message))
             text += $" Message from the salon: {dto.Message.Trim()}";
+
+        if (dto.Status == AppointmentStatus.Completed)
+        {
+            var summary = await loyalty.GetSummaryAsync(appointment.CustomerId);
+            text += $" You earned {LoyaltyRules.CalculatePoints(appointment.Price)} loyalty points and now have {summary.Points} ({summary.Tier}).";
+        }
 
         await notifications.NotifyUserAsync(appointment.CustomerId, title, text,
             NotificationType.StatusChange, appointment.AppointmentId);

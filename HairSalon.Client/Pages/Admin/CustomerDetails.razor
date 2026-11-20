@@ -38,6 +38,8 @@ else
                         <dt class="col-5">Last visit</dt><dd class="col-7">@(_customer.LastVisit is DateOnly d ? Format.Date(d) : "-")</dd>
                         <dt class="col-5">Favourite service</dt><dd class="col-7">@(_customer.FavoriteService ?? "-")</dd>
                         <dt class="col-5">Favourite stylist</dt><dd class="col-7">@(_customer.FavoriteStylist ?? "-")</dd>
+                        <dt class="col-5">Loyalty</dt>
+                        <dd class="col-7"><span class="tier-badge tier-@_customer.LoyaltyTier.ToLower()">@_customer.LoyaltyTier</span> @_customer.LoyaltyPoints points</dd>
                     </dl>
                 </div>
             </div>

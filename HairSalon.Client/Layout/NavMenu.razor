@@ -67,6 +67,7 @@
                                 <i class="bi bi-person-circle"></i> @context.User.Identity?.Name
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end @(_userOpen ? "show" : "")" data-bs-popper="static">
+                                <li><NavLink class="dropdown-item" href="profile"><i class="bi bi-person"></i> My profile</NavLink></li>
                                 <li><NavLink class="dropdown-item" href="notifications"><i class="bi bi-bell"></i> Notifications</NavLink></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li><button class="dropdown-item" @onclick="LogoutAsync"><i class="bi bi-box-arrow-right"></i> Log out</button></li>

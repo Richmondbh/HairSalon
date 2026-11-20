@@ -27,6 +27,9 @@ public class Appointment
     /// </summary>
     public decimal Price { get; set; }
 
+    /// <summary>Loyalty discount (in %) that was applied to Price.</summary>
+    public int DiscountPercent { get; set; }
+
     /// <summary>Set by the reminder background service so a reminder is only sent once.</summary>
     public bool ReminderSent { get; set; }
 

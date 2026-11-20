@@ -6,7 +6,7 @@ namespace HairSalon.Api.Models;
 
 /// <summary>
 /// A user account. IdentityUser already has Id, UserName, Email, PhoneNumber,
-/// PasswordHash, LockoutEnd ... - I only add the extra profile fields the salon needs.
+/// PasswordHash, LockoutEnd ... - we only add the extra profile fields the salon needs.
 /// Customers and administrators are both ApplicationUsers; ROLES tell them apart.
 /// </summary>
 public class ApplicationUser : IdentityUser
@@ -25,4 +25,7 @@ public class ApplicationUser : IdentityUser
 
     // Navigation property: one customer has many appointments.
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    // Many-to-many with Stylist through the FavoriteStylist join entity.
+    public ICollection<FavoriteStylist> FavoriteStylists { get; set; } = new List<FavoriteStylist>();
 }

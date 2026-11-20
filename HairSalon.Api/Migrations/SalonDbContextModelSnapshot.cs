@@ -110,6 +110,9 @@ namespace HairSalon.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("DiscountPercent")
+                        .HasColumnType("INTEGER");
+
                     b.Property<TimeOnly>("EndTime")
                         .HasColumnType("TEXT");
 
@@ -146,6 +149,24 @@ namespace HairSalon.Api.Migrations
                     b.HasIndex("StylistId", "AppointmentDate");
 
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("HairSalon.Api.Models.FavoriteStylist", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StylistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "StylistId");
+
+                    b.HasIndex("StylistId");
+
+                    b.ToTable("FavoriteStylists");
                 });
 
             modelBuilder.Entity("HairSalon.Api.Models.Notification", b =>
@@ -455,6 +476,25 @@ namespace HairSalon.Api.Migrations
                     b.Navigation("Stylist");
                 });
 
+            modelBuilder.Entity("HairSalon.Api.Models.FavoriteStylist", b =>
+                {
+                    b.HasOne("HairSalon.Api.Models.Stylist", "Stylist")
+                        .WithMany("FavoritedBy")
+                        .HasForeignKey("StylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HairSalon.Api.Models.ApplicationUser", "User")
+                        .WithMany("FavoriteStylists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Stylist");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("HairSalon.Api.Models.Notification", b =>
                 {
                     b.HasOne("HairSalon.Api.Models.Appointment", "Appointment")
@@ -538,6 +578,8 @@ namespace HairSalon.Api.Migrations
             modelBuilder.Entity("HairSalon.Api.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("FavoriteStylists");
                 });
 
             modelBuilder.Entity("HairSalon.Api.Models.Appointment", b =>
@@ -553,6 +595,8 @@ namespace HairSalon.Api.Migrations
             modelBuilder.Entity("HairSalon.Api.Models.Stylist", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("FavoritedBy");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,6 +15,9 @@ public class CustomerDto
     public decimal TotalSpent { get; set; }
     public DateOnly? LastVisit { get; set; }
     public bool IsLocked { get; set; }
+
+    public int LoyaltyPoints { get; set; }
+    public string LoyaltyTier { get; set; } = string.Empty;
 }
 
 /// <summary>A customer with their full appointment history.</summary>

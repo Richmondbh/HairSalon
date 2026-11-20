@@ -22,6 +22,10 @@
                 <i class="bi bi-clock"></i> @Format.Time(Appointment.StartTime)-@Format.Time(Appointment.EndTime)
                 &middot; <i class="bi bi-person"></i> @Appointment.StylistName
                 &middot; <i class="bi bi-cash"></i> @Format.Price(Appointment.Price)
+                @if (Appointment.DiscountPercent > 0)
+                {
+                    <span class="badge text-bg-warning ms-1">-@Appointment.DiscountPercent% loyalty</span>
+                }
             </div>
             @if (ShowCustomer)
             {

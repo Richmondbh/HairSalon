@@ -51,3 +51,30 @@ public class AuthResponseDto
     public string FullName { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = new();
 }
+
+/// <summary>The logged-in user's profile, shown on the "My profile" page.</summary>
+public class UserProfileDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public DateTime RegistrationDate { get; set; }
+    public LoyaltySummaryDto Loyalty { get; set; } = new();
+}
+
+/// <summary>Sent when the user edits their profile.</summary>
+public class UpdateProfileDto
+{
+    [Required(ErrorMessage = "Please enter your first name.")]
+    [StringLength(50)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Please enter your last name.")]
+    [StringLength(50)]
+    public string LastName { get; set; } = string.Empty;
+
+    [RegularExpression(@"^[0-9 +()\-]{6,20}$", ErrorMessage = "Please enter a valid phone number.")]
+    public string? PhoneNumber { get; set; }
+}

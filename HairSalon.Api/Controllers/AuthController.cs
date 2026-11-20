@@ -1,5 +1,7 @@
+using HairSalon.Api.Infrastructure;
 using HairSalon.Api.Services;
 using HairSalon.Shared.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HairSalon.Api.Controllers;
@@ -24,4 +26,16 @@ public class AuthController(AuthService authService) : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto) =>
         Ok(await authService.LoginAsync(dto));
+
+    /// <summary>GET api/auth/profile - the logged-in user's profile and loyalty status.</summary>
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<ActionResult<UserProfileDto>> GetProfile() =>
+        Ok(await authService.GetProfileAsync(User.GetUserId()));
+
+    /// <summary>PUT api/auth/profile - update name and phone number.</summary>
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<ActionResult<UserProfileDto>> UpdateProfile(UpdateProfileDto dto) =>
+        Ok(await authService.UpdateProfileAsync(User.GetUserId(), dto));
 }

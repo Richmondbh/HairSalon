@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// NOTIFICATIONS (Grade A).
+/// NOTIFICATIONS 
 /// Other services call NotifyUserAsync / NotifyAdminsAsync when something happens
 /// (booking created, confirmed, cancelled, moved, reminder ...). The Blazor client polls
 /// for the unread count and shows it on the bell icon.

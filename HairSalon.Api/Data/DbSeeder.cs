@@ -63,6 +63,7 @@ public static class DbSeeder
         await SeedAppointmentsAsync(db, customers);
         await SeedNotificationsAsync(db, admin, customers);
         await SeedReviewsAsync(db, customers[0]);
+        await SeedFavoritesAsync(db, customers[0]);
 
         logger.LogInformation("Database is ready.");
     }
@@ -332,6 +333,21 @@ public static class DbSeeder
                 CreatedAt = appointment.AppointmentDate.ToDateTime(appointment.EndTime).AddDays(1)
             });
         }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedFavoritesAsync(SalonDbContext db, ApplicationUser anna)
+    {
+        if (await db.FavoriteStylists.AnyAsync()) return;
+
+        var favourites = await db.Stylists
+            .Where(s => s.FirstName == "Emma" || s.FirstName == "Sara")
+            .Select(s => s.StylistId)
+            .ToListAsync();
+
+        foreach (var stylistId in favourites)
+            db.FavoriteStylists.Add(new FavoriteStylist { UserId = anna.Id, StylistId = stylistId });
 
         await db.SaveChangesAsync();
     }

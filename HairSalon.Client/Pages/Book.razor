@@ -3,6 +3,8 @@
 @inject ServiceApiClient ServiceApi
 @inject StylistApiClient StylistApi
 @inject AppointmentApiClient AppointmentApi
+@inject AuthApiClient AuthApi
+@inject FavoriteApiClient FavoriteApi
 @inject ToastService Toasts
 @inject NavigationManager Navigation
 
@@ -128,6 +130,12 @@ else
                             {
                                 <span>-</span>
                             }
+                            else if (_loyalty?.DiscountPercent > 0)
+                            {
+                                <span class="text-decoration-line-through text-muted me-2">@Format.Price(SelectedService.Price)</span>
+                                <strong>@Format.Price(Math.Round(SelectedService.Price * (100 - _loyalty.DiscountPercent) / 100m, 0))</strong>
+                                <div class="small text-success"><i class="bi bi-gem"></i> @_loyalty.Tier member discount: @_loyalty.DiscountPercent%</div>
+                            }
                             else
                             {
                                 <strong>@Format.Price(SelectedService.Price)</strong>
@@ -158,13 +166,19 @@ else
     private bool _loadingSlots;
     private bool _busy;
     private string? _error;
+    private LoyaltySummaryDto? _loyalty;
+    private HashSet<int> _favoriteIds = new();
 
     private ServiceDto? SelectedService => _services?.FirstOrDefault(s => s.ServiceId == _model.ServiceId);
     private StylistDto? SelectedStylist => _stylists?.FirstOrDefault(s => s.StylistId == _model.StylistId);
 
-    private IEnumerable<StylistDto> OrderedStylists => _stylists ?? new();
+    // Favourite stylists first (Grade A: favourite stylist).
+    private IEnumerable<StylistDto> OrderedStylists =>
+        (_stylists ?? new()).OrderByDescending(s => _favoriteIds.Contains(s.StylistId)).ThenBy(s => s.FirstName);
 
-    private static string StylistLabel(StylistDto s) => $"{s.FullName} - {s.Specialization}";
+    private string StylistLabel(StylistDto s) =>
+        $"{(_favoriteIds.Contains(s.StylistId) ? "♥ " : "")}{s.FullName} - {s.Specialization}" +
+        (s.ReviewCount > 0 ? $" (★ {s.AverageRating:0.0})" : "");
 
     protected override async Task OnInitializedAsync()
     {
@@ -172,6 +186,8 @@ else
         {
             _services = await ServiceApi.GetAllAsync();
             _stylists = await StylistApi.GetAllAsync(onlyAvailable: true);
+            _loyalty = (await AuthApi.GetProfileAsync()).Loyalty;
+            _favoriteIds = (await FavoriteApi.GetFavoriteIdsAsync()).ToHashSet();
         }
         catch (ApiException ex)
         {

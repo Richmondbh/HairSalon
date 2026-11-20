@@ -1,0 +1,166 @@
+@page "/profile"
+@attribute [Authorize]
+@inject AuthApiClient AuthApi
+@inject ServiceApiClient ServiceApi
+@inject StylistApiClient StylistApi
+@inject FavoriteApiClient FavoriteApi
+@inject ToastService Toasts
+
+<PageTitle>My profile | Nordic Hair Studio</PageTitle>
+
+<div class="page-header">
+    <h1>My profile</h1>
+    <p class="text-muted mb-0">Your details, loyalty status and favourite stylists.</p>
+</div>
+
+<AlertMessage @bind-Message="_error" />
+
+@if (_profile == null)
+{
+    @if (_error == null)
+    {
+        <LoadingSpinner />
+    }
+}
+else
+{
+    <div class="row g-4 mb-5">
+        <div class="col-lg-5">
+            <LoyaltyCard Loyalty="_profile.Loyalty" />
+        </div>
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Personal details</h2>
+                    <EditForm Model="_form" OnValidSubmit="SaveAsync">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label" for="p-first">First name</label>
+                                <InputText id="p-first" class="form-control" @bind-Value="_form.FirstName" />
+                                <ValidationMessage For="() => _form.FirstName" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="p-last">Last name</label>
+                                <InputText id="p-last" class="form-control" @bind-Value="_form.LastName" />
+                                <ValidationMessage For="() => _form.LastName" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Email</label>
+                                <input class="form-control" value="@_profile.Email" disabled />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="p-phone">Phone</label>
+                                <InputText id="p-phone" type="tel" class="form-control" @bind-Value="_form.PhoneNumber" />
+                                <ValidationMessage For="() => _form.PhoneNumber" />
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="small text-muted">Member since @_profile.RegistrationDate.ToString("d MMMM yyyy")</span>
+                            <button type="submit" class="btn btn-salon" disabled="@_saving">Save changes</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="mb-5">
+        <div class="section-title">
+            <h2><i class="bi bi-heart-fill text-danger"></i> My favourite stylists</h2>
+            <a href="stylists">Find stylists <i class="bi bi-arrow-right"></i></a>
+        </div>
+        @if (FavoriteStylists.Count == 0)
+        {
+            <p class="text-muted">Tap the heart on a stylist to save them here.</p>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach (var stylist in FavoriteStylists)
+                {
+                    <div class="col">
+                        <StylistCard Stylist="stylist" Compact="true" ShowFavorite="true" IsFavorite="true"
+                                     IsFavoriteChanged="isFavorite => OnFavoriteChanged(stylist.StylistId, isFavorite)" />
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    @if (_recommended.Count > 0)
+    {
+        <section>
+            <div class="section-title">
+                <h2><i class="bi bi-lightbulb"></i> You might also like</h2>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                @foreach (var service in _recommended)
+                {
+                    <div class="col">
+                        <ServiceCard Service="service">
+                            <a class="btn btn-sm btn-salon" href="@($"book?serviceId={service.ServiceId}")">Book</a>
+                        </ServiceCard>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private UserProfileDto? _profile;
+    private UpdateProfileDto _form = new();
+    private List<StylistDto> _stylists = new();
+    private HashSet<int> _favoriteIds = new();
+    private List<ServiceDto> _recommended = new();
+    private string? _error;
+    private bool _saving;
+
+    private List<StylistDto> FavoriteStylists => _stylists.Where(s => _favoriteIds.Contains(s.StylistId)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _profile = await AuthApi.GetProfileAsync();
+            _form = new UpdateProfileDto
+            {
+                FirstName = _profile.FirstName,
+                LastName = _profile.LastName,
+                PhoneNumber = _profile.PhoneNumber
+            };
+            _stylists = await StylistApi.GetAllAsync();
+            _favoriteIds = (await FavoriteApi.GetFavoriteIdsAsync()).ToHashSet();
+            _recommended = await ServiceApi.GetRecommendedAsync(3);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            _profile = await AuthApi.UpdateProfileAsync(_form);
+            Toasts.ShowSuccess("Your details were saved. Log in again to see the new name in the menu.");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void OnFavoriteChanged(int stylistId, bool isFavorite)
+    {
+        if (isFavorite) _favoriteIds.Add(stylistId);
+        else _favoriteIds.Remove(stylistId);
+    }
+}

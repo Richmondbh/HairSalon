@@ -70,6 +70,7 @@ public static class MappingExtensions
         Status = a.Status,
         Notes = a.Notes,
         Price = a.Price,
+        DiscountPercent = a.DiscountPercent,
         CreatedAt = a.CreatedAt,
         ServiceId = a.ServiceId,
         ServiceName = a.Service?.Name ?? string.Empty,

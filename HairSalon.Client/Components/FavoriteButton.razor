@@ -1,0 +1,41 @@
+@inject FavoriteApiClient FavoriteApi
+@inject ToastService Toasts
+@*
+    A heart button that adds/removes a favourite stylist. It calls the API ITSELF and then
+    tells its parent the new value through IsFavoriteChanged (so it supports @bind-IsFavorite).
+*@
+
+<button type="button" class="favorite-button @(IsFavorite ? "active" : "")" disabled="@_busy"
+        title="@(IsFavorite ? "Remove from favourites" : "Add to favourites")" @onclick="ToggleAsync">
+    <i class="bi @(IsFavorite ? "bi-heart-fill" : "bi-heart")"></i>
+</button>
+
+@code {
+    [Parameter] public int StylistId { get; set; }
+    [Parameter] public bool IsFavorite { get; set; }
+    [Parameter] public EventCallback<bool> IsFavoriteChanged { get; set; }
+
+    private bool _busy;
+
+    private async Task ToggleAsync()
+    {
+        _busy = true;
+        try
+        {
+            if (IsFavorite)
+                await FavoriteApi.RemoveAsync(StylistId);
+            else
+                await FavoriteApi.AddAsync(StylistId);
+
+            await IsFavoriteChanged.InvokeAsync(!IsFavorite);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.ShowError(ex.Message);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

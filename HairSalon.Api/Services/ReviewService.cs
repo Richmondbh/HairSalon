@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// REVIEWS AND RATINGS (Grade A).
+/// REVIEWS AND RATINGS 
 /// Rules: you can only review your OWN, COMPLETED appointment, and only once.
 /// </summary>
 public class ReviewService(SalonDbContext db, NotificationService notifications)

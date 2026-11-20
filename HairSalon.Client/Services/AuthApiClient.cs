@@ -23,4 +23,9 @@ public class AuthApiClient(HttpClient http, JwtAuthenticationStateProvider authS
 
     /// <summary>A JWT cannot be "cancelled" on the server - logging out = forgetting the token.</summary>
     public Task LogoutAsync() => AuthState.MarkUserAsLoggedOutAsync();
+
+    public Task<UserProfileDto> GetProfileAsync() => GetAsync<UserProfileDto>("api/auth/profile");
+
+    public Task<UserProfileDto> UpdateProfileAsync(UpdateProfileDto dto) =>
+        PutAsync<UserProfileDto>("api/auth/profile", dto);
 }

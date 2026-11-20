@@ -19,4 +19,7 @@ public class ServiceApiClient(HttpClient http, JwtAuthenticationStateProvider au
     public Task<ServiceDto> UpdateAsync(int id, ServiceEditDto dto) => PutAsync<ServiceDto>($"api/services/{id}", dto);
 
     public async Task<string> DeleteAsync(int id) => (await DeleteAsync<ApiMessage>($"api/services/{id}")).Message;
+
+    public Task<List<ServiceDto>> GetRecommendedAsync(int count) =>
+        GetAsync<List<ServiceDto>>($"api/services/recommended?count={count}");
 }

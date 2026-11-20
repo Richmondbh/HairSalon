@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// ADVANCED LINQ for the admin dashboard and the yearly report.
+/// LINQ for the admin dashboard and the yearly report.
 ///
 /// Note about SQLite: it stores decimal values as text and cannot SUM/AVERAGE/ORDER BY them
 /// in SQL. We therefore load a small PROJECTION (only the columns we need) with one query and

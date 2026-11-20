@@ -90,6 +90,45 @@ public class ServiceCatalogService(SalonDbContext db)
         return $"'{service.Name}' was deleted.";
     }
 
+    /// <summary>
+    /// RECOMMENDATIONS (Grade A): services in the categories the customer books most,
+    /// that they have not tried yet. Falls back to the most popular services.
+    /// </summary>
+    public async Task<List<ServiceDto>> GetRecommendedAsync(string userId, int count)
+    {
+        // 1. The customer's booking history (only the columns we need).
+        var history = await db.Appointments
+            .Where(a => a.CustomerId == userId && a.Status != AppointmentStatus.Cancelled)
+            .Select(a => new { a.ServiceId, a.Service.Category })
+            .ToListAsync();
+
+        var triedServiceIds = history.Select(h => h.ServiceId).ToHashSet();
+
+        // 2. Their favourite categories, most booked first (GroupBy + OrderByDescending).
+        var favouriteCategories = history
+            .GroupBy(h => h.Category)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .ToList();
+
+        // 3. All active services with their popularity.
+        var candidates = await db.Services
+            .Where(s => s.IsActive)
+            .Select(s => new { Service = s, Bookings = s.Appointments.Count(a => a.Status != AppointmentStatus.Cancelled) })
+            .ToListAsync();
+
+        // 4. Rank: not tried yet -> favourite category first -> most popular.
+        return candidates
+            .Where(c => !triedServiceIds.Contains(c.Service.ServiceId))
+            .OrderBy(c => favouriteCategories.Contains(c.Service.Category)
+                ? favouriteCategories.IndexOf(c.Service.Category)
+                : int.MaxValue)
+            .ThenByDescending(c => c.Bookings)
+            .Take(count)
+            .Select(c => c.Service.ToDto())
+            .ToList();
+    }
+
     private async Task EnsureUniqueNameAsync(string name, int? excludeId)
     {
         var normalized = name.Trim().ToLower();

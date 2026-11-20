@@ -4,7 +4,7 @@ using HairSalon.Shared.Enums;
 namespace HairSalon.Api.Models;
 
 /// <summary>
-/// ENTITY (Grade A): an in-app message to one user, e.g. "Your booking was confirmed".
+/// ENTITY : an in-app message to one user, e.g. "Your booking was confirmed".
 /// Created automatically by the service layer when something happens to an appointment.
 /// </summary>
 public class Notification

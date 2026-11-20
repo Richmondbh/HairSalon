@@ -18,6 +18,7 @@ public class AppointmentDto
     public AppointmentStatus Status { get; set; }
     public string? Notes { get; set; }
     public decimal Price { get; set; }
+    public int DiscountPercent { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public int ServiceId { get; set; }

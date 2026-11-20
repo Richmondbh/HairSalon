@@ -1,5 +1,8 @@
 @*
     REUSABLE COMPONENT: one stylist. Used on the Stylists page, the home page and the profile page.
+    Communication through THREE levels:
+        FavoriteButton  --IsFavoriteChanged-->  StylistCard  --IsFavoriteChanged-->  page
+    The card just passes the parent's callback on to the button.
 *@
 
 <div class="card stylist-card h-100 @(Stylist.IsAvailable ? "" : "unavailable")">
@@ -11,6 +14,10 @@
                 <div class="text-muted small">@Stylist.Specialization</div>
                 <StarRating Value="Stylist.AverageRating" Count="Stylist.ReviewCount" />
             </div>
+            @if (ShowFavorite)
+            {
+                <FavoriteButton StylistId="Stylist.StylistId" IsFavorite="IsFavorite" IsFavoriteChanged="IsFavoriteChanged" />
+            }
         </div>
 
         @if (!Compact)
@@ -44,4 +51,8 @@
 
     /// <summary>Compact = without the bio (home page).</summary>
     [Parameter] public bool Compact { get; set; }
+
+    [Parameter] public bool ShowFavorite { get; set; }
+    [Parameter] public bool IsFavorite { get; set; }
+    [Parameter] public EventCallback<bool> IsFavoriteChanged { get; set; }
 }

@@ -18,6 +18,7 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<FavoriteStylist> FavoriteStylists => Set<FavoriteStylist>();
 
     /// <summary>
     /// The "Fluent API": configuration that cannot (or should not) be done with attributes,
@@ -89,6 +90,22 @@ public class SalonDbContext(DbContextOptions<SalonDbContext> options)
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(r => r.AppointmentId).IsUnique();
+        });
+
+        builder.Entity<FavoriteStylist>(entity =>
+        {
+            // COMPOSITE primary key: the pair (UserId, StylistId) must be unique.
+            entity.HasKey(f => new { f.UserId, f.StylistId });
+
+            entity.HasOne(f => f.User)
+                  .WithMany(u => u.FavoriteStylists)
+                  .HasForeignKey(f => f.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.Stylist)
+                  .WithMany(s => s.FavoritedBy)
+                  .HasForeignKey(f => f.StylistId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

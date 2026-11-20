@@ -39,6 +39,7 @@ else
                         <th class="text-end">Bookings</th>
                         <th class="text-end">Spent</th>
                         <th>Last visit</th>
+                        <th>Loyalty</th>
                         <th>Account</th>
                     </tr>
                 </thead>
@@ -61,6 +62,7 @@ else
                             </td>
                             <td class="text-end">@Format.Price(c.TotalSpent)</td>
                             <td class="small">@(c.LastVisit is DateOnly last ? Format.ShortDate(last) : "-")</td>
+                            <td><span class="tier-badge tier-@c.LoyaltyTier.ToLower()">@c.LoyaltyTier</span> <span class="small text-muted">@c.LoyaltyPoints p</span></td>
                             <td>
                                 @if (c.IsLocked)
                                 {
