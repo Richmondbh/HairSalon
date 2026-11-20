@@ -37,7 +37,7 @@ The project is a complete full-stack application. A **Blazor WebAssembly** front
 
 ## 🎬 Demo
 
-![Booking an appointment](images/demo-booking.gif)
+![Booking an appointment](images/demo.gif)
 
 *A customer books an appointment. The free times are calculated live from opening hours and existing bookings.*
 
