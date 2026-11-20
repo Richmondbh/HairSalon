@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-// =====================================================================================
+
 //  Program.cs - the start-up file of the Web API.
 //  Part 1 (before builder.Build()) registers SERVICES in the dependency injection (DI)
 //  container. Part 2 (after Build()) sets up the MIDDLEWARE pipeline that every HTTP
@@ -26,7 +26,7 @@ builder.Services.AddDbContext<SalonDbContext>(options =>
 
 // ---------- 2. ASP.NET Core Identity (users, passwords and roles) ----------
 // AddIdentityCore registers UserManager/RoleManager WITHOUT cookie login.
-// We use JWT tokens instead of cookies because the Blazor WebAssembly client is a
+// I used JWT tokens instead of cookies because the Blazor WebAssembly client is a
 // separate application that calls the API over HTTP.
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
@@ -42,7 +42,7 @@ builder.Services
     .AddEntityFrameworkStores<SalonDbContext>();
 
 // ---------- 3. Authentication with JWT bearer tokens ----------
-// Every request may carry "Authorization: Bearer <token>". The middleware checks the
+// Every request may carries "Authorization: Bearer <token>". The middleware checks the
 // signature, issuer, audience and expiry and turns the claims into HttpContext.User.
 var jwt = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwt["Key"];
@@ -55,7 +55,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Keep the short claim names ("sub", "name", "role") exactly as they are in the token.
+        // This Keeps the short claim names ("sub", "name", "role") exactly as they are in the token.
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -73,7 +73,7 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
-// ---------- 4. Business services (the "service layer") ----------
+// - 4. Business services (the "service layer") ----------
 // Scoped = one instance per HTTP request, which matches the lifetime of the DbContext.
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
@@ -90,13 +90,13 @@ builder.Services.AddScoped<FavoriteService>();
 // A background service that runs for as long as the API runs and sends reminders.
 builder.Services.AddHostedService<AppointmentReminderService>();
 
-// ---------- 5. Controllers + JSON ----------
+//  5. Controllers + JSON ----------
 // Enums are sent as text ("Confirmed") instead of numbers (1) - easier to read and test.
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-// ---------- 6. Central error handling ----------
-// Business exceptions thrown anywhere in the service layer become clean JSON answers.
+// 6. Central error handling ----------
+// Business exceptions thrown anywhere in the service layer becomes clean JSON answers.
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -104,9 +104,9 @@ builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Nordic Hair Studio API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "RHB Hair Studio API", Version = "v1" });
 
-    // Adds the "Authorize" button so you can paste a JWT and test protected endpoints.
+    // Adds the "Authorize" button so one can paste a JWT and test protected endpoints.
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -138,10 +138,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Create/upgrade the database and insert sample data (see Data/DbSeeder.cs).
+// Create/upgrade the database and insert sample data 
 await DbSeeder.InitializeAsync(app.Services);
 
-// ===================== The middleware pipeline (order matters!) =====================
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -152,8 +152,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("BlazorClient");
-app.UseAuthentication();   // Who are you? (reads the JWT)
-app.UseAuthorization();    // Are you allowed? ([Authorize] attributes)
+app.UseAuthentication();   
+app.UseAuthorization();   
 
 app.MapControllers();
 
