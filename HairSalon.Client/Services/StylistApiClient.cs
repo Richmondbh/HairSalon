@@ -18,4 +18,7 @@ public class StylistApiClient(HttpClient http, JwtAuthenticationStateProvider au
     public Task<StylistDto> UpdateAsync(int id, StylistEditDto dto) => PutAsync<StylistDto>($"api/stylists/{id}", dto);
 
     public async Task<string> DeleteAsync(int id) => (await DeleteAsync<ApiMessage>($"api/stylists/{id}")).Message;
+
+    public Task<List<StylistDto>> GetTopRatedAsync(int count) =>
+        GetAsync<List<StylistDto>>($"api/stylists/top?count={count}");
 }

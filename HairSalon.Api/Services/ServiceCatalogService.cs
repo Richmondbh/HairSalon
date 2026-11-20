@@ -129,6 +129,18 @@ public class ServiceCatalogService(SalonDbContext db)
             .ToList();
     }
 
+    /// <summary>The most booked active services (shown on the home page).</summary>
+    public async Task<List<ServiceDto>> GetPopularAsync(int count)
+    {
+        var services = await db.Services
+            .Where(s => s.IsActive)
+            .OrderByDescending(s => s.Appointments.Count(a => a.Status != AppointmentStatus.Cancelled))
+            .Take(count)
+            .ToListAsync();
+
+        return services.Select(s => s.ToDto()).ToList();
+    }
+
     private async Task EnsureUniqueNameAsync(string name, int? excludeId)
     {
         var normalized = name.Trim().ToLower();

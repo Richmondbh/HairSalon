@@ -1,7 +1,7 @@
 namespace HairSalon.Api.Models;
 
 /// <summary>
-/// JOIN ENTITY : favourite stylist).
+/// JOIN ENTITY (Grade A: favourite stylist).
 /// Creates a MANY-TO-MANY relationship: a customer can have many favourite stylists and a
 /// stylist can be the favourite of many customers. The primary key is the combination
 /// (UserId, StylistId), configured in SalonDbContext, so the same pair cannot be stored twice.

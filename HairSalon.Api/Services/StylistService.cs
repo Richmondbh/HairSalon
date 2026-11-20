@@ -82,6 +82,17 @@ public class StylistService(SalonDbContext db)
         return $"{stylist.FullName} was deleted.";
     }
 
+    /// <summary>The best rated available stylists (home page).</summary>
+    public async Task<List<StylistDto>> GetTopRatedAsync(int count)
+    {
+        var all = await GetAllAsync(search: null, onlyAvailable: true);
+        return all
+            .OrderByDescending(s => s.AverageRating)
+            .ThenByDescending(s => s.ReviewCount)
+            .Take(count)
+            .ToList();
+    }
+
     /// <summary>
     /// Calculates the average rating per stylist with ONE query:
     /// Reviews -> grouped by the appointment's stylist -> average + count.

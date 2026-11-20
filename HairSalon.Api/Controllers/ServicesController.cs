@@ -59,4 +59,9 @@ public class ServicesController(ServiceCatalogService serviceCatalog) : Controll
     [HttpGet("recommended")]
     public async Task<ActionResult<List<ServiceDto>>> GetRecommended([FromQuery] int count = 3) =>
         Ok(await serviceCatalog.GetRecommendedAsync(User.GetUserId(), Math.Clamp(count, 1, 10)));
+
+    /// <summary>GET api/services/popular - the most booked services (home page).</summary>
+    [HttpGet("popular")]
+    public async Task<ActionResult<List<ServiceDto>>> GetPopular([FromQuery] int count = 3) =>
+        Ok(await serviceCatalog.GetPopularAsync(Math.Clamp(count, 1, 10)));
 }

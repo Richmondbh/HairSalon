@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// FAVOURITE STYLISTS (Grade A) - works with the many-to-many join table FavoriteStylists.
+/// FAVOURITE STYLISTS- works with the many-to-many join table FavoriteStylists.
 /// </summary>
 public class FavoriteService(SalonDbContext db)
 {

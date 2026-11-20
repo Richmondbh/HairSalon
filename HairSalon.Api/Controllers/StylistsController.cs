@@ -40,4 +40,9 @@ public class StylistsController(StylistService stylistService) : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiMessage>> Delete(int id) =>
         Ok(new ApiMessage(await stylistService.DeleteAsync(id)));
+
+    /// <summary>GET api/stylists/top - best rated stylists for the home page.</summary>
+    [HttpGet("top")]
+    public async Task<ActionResult<List<StylistDto>>> GetTop([FromQuery] int count = 3) =>
+        Ok(await stylistService.GetTopRatedAsync(Math.Clamp(count, 1, 10)));
 }

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HairSalon.Api.Services;
 
 /// <summary>
-/// LOYALTY PROGRAMME  The points are CALCULATED from the completed appointments
+/// LOYALTY PROGRAMME. The points are CALCULATED from the completed appointments
 /// instead of being stored, so they can never get out of sync with the booking history.
 /// The rules themselves are in Shared/Rules/LoyaltyRules.cs.
 /// </summary>

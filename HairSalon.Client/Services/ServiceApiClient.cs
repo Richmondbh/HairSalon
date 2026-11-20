@@ -22,4 +22,7 @@ public class ServiceApiClient(HttpClient http, JwtAuthenticationStateProvider au
 
     public Task<List<ServiceDto>> GetRecommendedAsync(int count) =>
         GetAsync<List<ServiceDto>>($"api/services/recommended?count={count}");
+
+    public Task<List<ServiceDto>> GetPopularAsync(int count) =>
+        GetAsync<List<ServiceDto>>($"api/services/popular?count={count}");
 }
