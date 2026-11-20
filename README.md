@@ -70,18 +70,31 @@ The project is a complete full-stack application. A **Blazor WebAssembly** front
 
 ##  Screenshots
 
+###  Customer experience
+ 
 <table>
   <tr>
-    <td width="50%"><img src="images/customer-home.png" alt="Customer home page"/><br/><b>Customer home</b>: personal recommendations, popular services, top stylists and reviews</td>
-    <td width="50%"><img src="images/admin-dashboard.png" alt="Admin dashboard"/><br/><b>Admin dashboard</b>: the key numbers of the business at a glance</td>
+    <td width="50%"><img src="images/customer-home.png" alt="Customer home page"/><br/><b>Home</b>: personal recommendations, popular services, top-rated stylists and reviews</td>
+    <td width="50%"><img src="images/customer-stylist.png" alt="Stylists page"/><br/><b>Stylists</b>: ratings, specialities, availability and favourite hearts</td>
   </tr>
   <tr>
-    <td width="50%"><img src="images/services.png" alt="Services page"/><br/><b>Services</b>: search and category filter</td>
-    <td width="50%"><img src="images/stylists.png" alt="Stylists page"/><br/><b>Stylists</b>: ratings, availability and favourites</td>
+    <td width="50%"><img src="images/customer-appointment.png" alt="My appointments"/><br/><b>My appointments</b>: upcoming and past visits; move, cancel or review</td>
+    <td width="50%"><img src="images/customer-profile.png" alt="My profile"/><br/><b>My profile</b>: loyalty tier and points, personal details, favourite stylists</td>
+  </tr>
+</table>
+### 🛠️ Admin area
+ 
+<table>
+  <tr>
+    <td width="50%"><img src="images/admin-home.png" alt="Admin dashboard"/><br/><b>Dashboard</b>: the key numbers of the business at a glance</td>
+    <td width="50%"><img src="images/admin-appointments.png" alt="Appointment management"/><br/><b>Appointments</b>: filter, confirm, complete, move or cancel bookings</td>
   </tr>
   <tr>
-    <td width="50%"><img src="images/booking.png" alt="Booking page"/><br/><b>Booking</b>: live free times and a price summary with loyalty discount</td>
-    <td width="50%"><img src="images/reports.png" alt="Reports page"/><br/><b>Reports</b>: yearly revenue and performance analysis</td>
+    <td width="50%"><img src="images/admin-services.png" alt="Services management"/><br/><b>Services</b>: search, category filter and full create, edit and delete management</td>
+    <td width="50%"><img src="images/admin-stylist.png" alt="Stylists management"/><br/><b>Stylists</b>: team overview with ratings and availability</td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="images/admin-report.png" alt="Reports and revenue analysis"/><br/><b>Reports &amp; revenue analysis</b>: revenue per month, by service and by category; top customers and stylist performance</td>
   </tr>
 </table>
 
