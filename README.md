@@ -24,7 +24,7 @@ Customers book appointments in under a minute. The salon manages its whole busin
 
 ##  About the project
 
-Many small salons still take bookings by phone and keep track of them on paper. **Nordic Hair Studio** shows how a modern salon could run instead.
+Many small salons still take bookings by phone and keep track of them on paper. **RHB Hair Studio** shows how a modern salon could run instead.
 
 - **Customers** browse services and stylists, see real free times, book online, get reminders, review their visit and earn loyalty discounts.
 - **The salon** confirms bookings, manages services, staff and customers, and follows revenue and trends in reports.
