@@ -291,7 +291,7 @@ HairSalon/
 - [ ] Cloud deployment (Azure App Service + Azure Static Web Apps)
 
 <details>
-<summary><b> Course requirements (Malmö University, Programming in C# III, Assignment 4)</b></summary>
+<summary><b> Course requirements (Malmö University, Programming in C# III)</b></summary>
 
 | Requirement | Where |
 |---|---|
