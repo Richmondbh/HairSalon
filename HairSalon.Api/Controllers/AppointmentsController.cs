@@ -8,19 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HairSalon.Api.Controllers;
 
-/// <summary>
-/// Booking endpoints. [Authorize] on the class = you must be logged in for every action
-/// unless the action says [AllowAnonymous].
-///
-///   GET  api/appointments/available-slots   everyone
-///   POST api/appointments                   logged in    (book)
-///   GET  api/appointments/mine              logged in    (my bookings)
-///   GET  api/appointments/5                 owner/Admin
-///   PUT  api/appointments/5/cancel          owner/Admin
-///   PUT  api/appointments/5/reschedule      owner/Admin
-///   GET  api/appointments                   Admin        (all, with filters)
-///   PUT  api/appointments/5/status          Admin        (confirm / complete / cancel)
-/// </summary>
+
 [ApiController]
 [Route("api/appointments")]
 [Authorize]
